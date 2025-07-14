@@ -1,0 +1,13 @@
+.DS_Store
+README.html
+*_files
+*.Rproj
+*.Rhistory
+*.RData
+*.Ruserdata
+*.Rproj.user
+
+z_CoSWAT
+Writing/z_Template
+Writing/z_images
+*.docs
