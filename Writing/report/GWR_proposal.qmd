@@ -1,0 +1,801 @@
+---
+title: "GEP: Evaluation of Groundwater Recharge (Regulation Services) Ecosystem Services"
+author: Shunkei Kakimoto
+format:
+  html:
+    page-layout: full
+    grid:
+      sidebar-width: 0px
+      body-width: 1000px
+      margin-width: 300px
+      gutter-width: 1.5rem
+    theme: 
+      - simple
+    embed-resources: true
+    number-sections: true
+    number-depth: 3
+    code-fold: true
+    code-summary: "Show the code"
+    code-tools: true
+    toc: true
+    include-after-body: 
+      file: toc.html
+    toc-depth: 3
+    toc-expand: 3
+    fontsize: 15pt
+    bibliography: ../../../../2_Water_General.bib
+    tbl-cap-location: top
+execute:
+  warning: false
+  message: false
+  echo: true
+  error: false
+  fig-align: "center"
+engine: knitr
+---
+
+# Introduction
+
+## Basic understanding of groundwater recharge as a regulating service
+
++ “Ground-water recharge” broadly describes the replenishment of water to a ground-water flow system [@Winter2000], and **it is a part of the hydrological regulation process** — a key regulating ecosystem service that maintains water flows, mitigates flood and drought risk, and supports other essential services such as water provision, streamflow maintenance, and wetland health.
+
+<br>
+
+
+**Groundwater recharge services supports a range of ecosystem services, including:**
+
++ Water Purification
++ Flood and Drought Mitigation
++ Soil and Land Stability: 
+  + Maintaining groundwater levels through recharge helps prevent land subsidence, which can occur when aquifers are depleted. This is crucial for preserving infrastructure and natural landscapes ([EPA](https://www.epa.gov/uic/aquifer-recharge-and-aquifer-storage-and-recovery)).
++ Climate Regulation:
+  + Groundwater-dependent ecosystems, such as wetlands, play a role in carbon sequestration and climate regulation. Recharge supports these ecosystems by sustaining their water needs. 
++ Nutrient Cycling:
+  + Recharge processes facilitate the movement and transformation of nutrients within the soil and water systems, supporting overall ecosystem productivity and health.
+
+## Some Terminologies
+
+![[Source:Groundwater is the saturated zone of soil/rock below the land surface - USGS](https://www.usgs.gov/media/images/groundwater-saturated-zone-soilrock-below-land-surface)](images/usgs_SaturatedZone.png)
+
++ <span style='color:blue'>**Unsaturated zone**</span> is the layer above the saturated zone. Here, the pores contain both air and water. **Water moves through this zone when it rains, trickling down until it reaches the saturated zone. This zone includes soil and sometimes rock, and it's where plants usually get their water** [[USGS](https://water.usgs.gov/ogw/unsaturated.html#:~:text=The%20unsaturated%20zone%20is%20the,as%20water%20in%20its%20pores.)]
+
++ <span style='color:blue'>**Saturated zone**</span> is the part of the ground where **all the pores and spaces between soil or rock particles are completely filled with water. This is where groundwater lives**. If you dig a well deep enough to reach this zone, the water you pump up comes from here. The top of the saturated zone is called the water table. [[USGS](https://water.usgs.gov/ogw/unsaturated.html#:~:text=The%20unsaturated%20zone%20is%20the,as%20water%20in%20its%20pores.)]
+
+
+::: {.callout-important}
+Hydrologically, **the unsaturated zone** is often the main factor controlling water movement from the land surface to the aquifer. Thus **it strongly affects the rate of aquifer recharge**, critical for the use and management of groundwater. It is often regarded as a filter that removes undesirable substances. To some extent this is true, but **a more general fact is that flow rates and chemical reactions in the unsaturated zone control whether, where, and how fast contaminants enter groundwater supplies**. Understanding of unsaturated-zone processes is therefore crucial in determining the amount and quality of groundwater that is available for human use. - [[USGS](https://water.usgs.gov/ogw/unsaturated.html#:~:text=The%20unsaturated%20zone%20is%20the,as%20water%20in%20its%20pores.)]
+:::
+
+<br>
+
+## Factors Affecting Groundwater Recharge
+**1. Groundwater recharge happens in the following two ways**:
+
++ natural part of the hydrologic cycle (e.g., precipitation, snowmelt, surface water infiltration)
++ human-induced process (e.g., irrigation and waste disposal, artificial recharge)
+
+::: {.callout-note}
+Our focus in on the groundwater recharge that occurs naturally as part of the hydrologic cycle.
+:::
+
+<br>
+
+**2. Precipitation is the primary source of groundwater recharge. Multiple factors affects the proportion of precipitation that becomes groundwater recharge, and the time it takes for water to actually move from the surface to the water table.**
+
++ Precipitation is the primary source of groundwater recharge. However, typically, most water from precipitation that infiltrates does not become recharge. Instead, it is stored in the soil zone and eventually returned to the atmosphere by evaporation and plant transpiration [@Mehner2009]. 
++ **A fraction of precipitation that becomes groundwater recharge is highly variable and depends on the multiple factors, including:**
+  - Weather patters (e.g., rainfall intensity, duration, and frequency)
+    - see @Viswanathan1984 about the recharge characteristics of an unconfined aquifer from the rainfall-water table relationship.
+  - Properties of surface soils (e.g., texture, structure, and moisture content)
+  - Land cover (e.g., svegetation type)
+  - Local topography (e.g., slope)
+  - Depth to the water table
+
+**These factors not only vary spatially bit also with respect to time**[@Viswanathan1984]. 
+
+
++ **The time it takes for water to actually move from the surface to the surface to the water table is affected by multiple factors:**
+  + Soil and rock permeability: Sandy soils allow faster infiltration; clay or rock layers slow it down.
+  + Depth to water table: The Ogallala’s water table can be over 100 feet down—water can take decades to get there.
+  + Vegetation and land use: Root systems, irrigation return flow, and surface sealing affect infiltration and delay.
+
+<br>
+
+**3. Depending on the type of aquifer, the recharge process can be different.**
+
++ There are mainly two types of aquifers ([NGWA](https://www.ngwa.org/what-is-groundwater/About-groundwater/unconfined-or-water-table-aquifers)):
+  - **unconfined aquifers**
+    +  Layers of impermeable material (i.e., confining layers) are both above and below the aquifer.
+		+ The groundwater stored in confined aquifer is often categorized as non-renewable resources (such groundwater is called fossil water) because it takes long time (several years to thousands of years) to recharge.
+  - **confined aquifers**
+    + An confined aquifer is not overlain by a confiding layer.
+    + For this type of aquifer, recharge is possible. The annual recharge rate depends on the weather patterns, and the properties of the aquifer and the confining layer.
+
+
+<!-- + **For this reason, I will focus on the groundwater recharge that occurs in shallow and unconfined aquifers. The reason I'm focusing on the shallow aquifers is that they are more likely to be recharged by precipitation quickly within a year.** -->
+
+
+## Annual Groundwater Recharge Rate
+
++ NOTE:An annual groundwater recharge rate means the long-term **average** rate at which precipitation replenishes the groundwater aquifer [@Scanlon.etal2012].
+  + For example, if 10 inches of precipitation infiltrates to recharge the aquifer taking 5 years to reach the aquifer, then the annual recharge rate is **10/5 = 2 inches per year**. 
+
+<br>
+
++ **Ogallala Aquifer (USA)**:
+  + Recharge Rate:  **0.07 inch per year** were common in much of the area, but as much as **0.8 to 1.0 inch of water per year** might have recharged the aquifer near some streams and between the South Platte and Republican Rivers. 
+  + Depth to Water Table: 50–300 feet (varies widely)
+  + Mostly unconfined
+  + Recharge Lag Time: Decades to centuries depending on location
+    + ​[U.S. Geological Survey](https://pubs.usgs.gov/ha/ha730/ch_c/C-text5.html?utm_source=chatgpt.com)
+    + [Kansas Geological Survey](https://geohydro.kgs.ku.edu/geohydro/ofr/OFR2007_1/index.html?utm_source=chatgpt.com)
+    + @Scanlon.etal2012
+
+<br>
+
++ **Central Valley Aquifer (California, USA)**
+  + Recharge Rate: ~0.2 to 5 inches/year, 0.26 to 1.52 inches/year during the 2003-2006 period [@Liu.etal2022].
+  + Depth to Water Table: 30–200 feet
+  + Both confined and unconfined
+  + Recharge Lag Time: Years to decades
+    + @Valley2009; @Bertoldi.etal1991; @Liu.etal2022
+    + @zotero-item-4093
+
+<br>
+
++ **Great Artesian Basin (Australia)**
+  + Recharge Rate: ~0.02 to 0.8 inches/year
+  + Depth to Water Table: 300 to >3000 feet
+  + Mostly confined
+  + Recharge Lag Time: Hundreds to thousands of years
+    + @Ransley.etal2015
+
+<br>
+
++ **Guarani Aquifer (South America: Brazil, Argentina, Paraguay, Uruguay)**
+  + Recharge Rate: 1.2 to 3 inches/year
+  + Depth to Water Table: 100–1000 feet
+  + Both confined and unconfined; unconfined in recharge areas
+  + Recharge Lag Time: Years to decades
+    + UNESCO Guarani Aquifer System project ([UNESCO-IHP](https://www.unesco.org/en/water))
+
+<br>
+
++ **Alter do Chao Aquifer (Amazon Basin)**
+  + Recharge Rate: The aquifer benefits from substantial recharge due to the region's high annual rainfall, averaging around 2,300 mm (approximately 90 inches) [@Tourian.etal2018]
+    + Also, see @HenrichsdeAzevedo.GuimaraesCampos2021
+  + Depth to Water Table: @Miguez-Macho.Fan2012 shows the water table is generally shallow (less than 2 meters) near valley floors, but can be much deeper (5-40 meters) under higher ground areas of the Amazon basin.
+  + Both confined and unconfined conditions, varying by location. In recharge areas where the aquifer material is exposed at the surface, it is typically unconfined, allowing direct infiltration of rainwater. In other regions, it may be confined beneath less permeable layers [@HenrichsdeAzevedo.GuimaraesCampos2021]
+  + Recharge Lag Time: The exact time for surface water to percolate and recharge the aquifer isn't well-documented. However, the combination of high rainfall and permeable soils suggests that recharge can occur relatively quickly, especially in unconfined sections. ​
+    + @Miguez-Macho.Fan2012
+
+<br>
+
++ **Indo-Gangetic Basin Aquifer (India, Pakistan, Bangladesh)**
+  + Recharge Rate: ~4 to 24 inches/year (monsoon-driven)
+  + Depth to Water Table: 10–150 feet
+  + Mostly unconfined
+  + Recharge Lag Time: Days to years
+    + @MacDonald.etal2016
+    + NOTE: *Groundwater abstraction from the transboundary Indo-Gangetic Basin comprises 25% of global groundwater withdrawals, sustaining agricultural productivity in Pakistan, India, Nepal and Bangladesh.*
+
+<br>
+
++ **North China Plain Aquifer**
+  + Recharge Rate: 4 inches/year
+  + Depth to Water Table: 100–400 feet (declining due to overuse)
+  + Confined/Unconfined: Both; unconfined near recharge zones
+  + Recharge Lag Time: Decades
+    + @Foster.Garduno2004; @Tan.etal2014; 
+    + @Yang.etal2015 shows the variation of recharge rates by vegetation types (crop types)
+
+<br>
+
++ **Arabian Aquifer System (Saudi Arabia and Gulf countries)**
+  + Recharge Rate: <0.1 inch/year (mostly fossil water)
+  + Depth to Water Table: 1000–4000 feet
+  + Confined/Unconfined: Mostly confined
+  + Recharge Lag Time: Hundreds to thousands of years
+    + @Margat.Gun2013
+
+<br>
+
+
+# Previous literature
+
+## Review Papers
+
++ **@Emerton.Bos2004**
+  + Ecosystem Valuation Techniques:
+    - [ ] Market price techniques
+    - [ ] Effect on production techniques
+    - [ ] Travel cost techniques
+    - [ ] Hedonic pricing techniques
+    - [ ] Replacement cost techniques
+      + Estimates the cost of replacing an ecosystem service with a man-made alternative that provides an equivalent function.
+    - [ ] Mitigative or avertive expenditure techniques
+      + Estimates how much people spend to avoid or mitigate the negative effects of the loss or degradation of an ecosystem service.
+    - [ ] Damage cost techniques
+    - [ ] Contingent valuation techniques
+
+<br>
+
++ @Bergkamp.Cross2006 
+
+
++ @Brauman.etal2007
+
+<br>
+
+## Groundwater Recharge: Hydrological Aspect
+
+## **@Viswanathan1984**
++ The study develops a time-series model to estimate how historical rainfall influences water table levels in an unconfined aquifer. 
++ The novelty of the study is that it used a recursive least-squares algorithm with time-varying parameters, **allowing recharge response to vary over time rather than assuming fixed coefficients.**
++ The study found that **time-varying parameters gave better water table predictions than constant-parameter models**, capturing the dynamic infiltration behavior more realistically. 
++ Furthermore, the study found that recharge is not only a function of rainfall volume but also **its sequence and intensity**. For example, isolated rain events (~25 mm/day)often produce no significant water table rise.
+
+## Economic values of groundwater recharge
+
+### [**@Barnes.etal1999**]{style="color:blue"}
++ The study evaluate the value of ecosystem services provided by wetlands in the Zambezi River basin system (The largest portion of the basin lies in Zambia).
++ They used the **replacement cost approach** to estimate the value of groundwater recharge service provided by wetland for domestic and commercial water use. Specifically, they estimate **what it would cost to provide the same amount of water to users if wetlands no longer recharged the aquifer**
+  + They assumed that 35% of the shallow wells would need to be replaced if wetlands became degraded, leading to lower groundwater tables.
++ They calculated the NPV of groundwater recharge (US$) as measured by estimating **the additional construction costs and health costs that would be incurred by reduced groundwater recharge due to wetland degradation.**
+
+::: {.callout-caution}
++ They didn't derive or measure groundwater recharge rate or volumns. In stead, they assumed that 35% of shallow-dug wells would require replacement with boreholes under a scenario of wetland degradation
+:::
+
+<br>
+
+### [**@Acharya.Barbier2000**]{style="color:blue"}
++ They used the **production function approach**,linking increased crop yields from recharge-supported irrigation to ecosystem value of groundwater recharge (for shallow aquifer) in Hadejia-Ngru wetlands in northern Nigeria.
++ Groundwater recharge from wetlands supports dry season agriculture through shallow aquifer extraction. Groundwater is the only source for irrigation during the dry season.
++ They first calculated **the economic value of agricultural production per hectare of irrigated land** based on the surveyed data.
++ Then, they estimate the crop production function (the water-yield relationship) econometrically.
++ Using the estimated production function, they **simulated hypothetical reductions in groundwater levels** (which would occur if wetland recharge declined). They then calculated the welfare change (loss in producer surplus) associated with these scenarios. This welfare loss was interpreted as the economic value of the groundwater recharge function provided by the wetlands.
+
+::: {.callout-caution}
++ This study is relevant to the groundwater recharge service for agricultural production. 
++ They did not directly measure of model the change in the volume of groundwater recharge itself. Instead, they **simulated** the effects of hypothetical changes in groundwater levels.
+:::
+
+
+<br>
+
+### **@Campbell.etal2020**
+  + They used USGS National Hydrography Database (NHD) spatial assessment of groundwater recharge ([USGS, 2018](https://www.usgs.gov/national-hydrography/national-hydrography-dataset)). The data contains the "Estimated Mean Annual Natural Groundwater Recharge, 2002" in cm3 per m2 for the mid-Atlantic region.
+    + This data was created from the application of the national SPAtially Referenced Regression On Watershed attributes (SPARROW) model.
+  + To value the groundwater recharge service, the study considered **the average value of municipal water price, the value of water for recreation, and the cost of watershed protection investments**. This resulted in an average value of $0.35 per cubic meter of groundwater recharged.
+  + Then, they multiplied the average value of groundwater recharge by the estimated recharge volume to obtain the total value of groundwater recharge in the mid-Atlantic region, which was estimated at $1.2 billion per year.
+
+::: {.callout-caution}
++ The resulted value of groundwater recharge is not a flow value of groundwater recharge. It is a groundwater recharge "potential" value, which is the maximum economic value of groundwater recharge service that can be obtained if all the amount of groundwater recharge is fully utilized for municipal water supply, recreation, and watershed protection, regardless of the geographic location of the recharge.
+  +  For example, even if the recharge is located in a remote area, the study assumes that it is fully utilized for municipal water supply, recreation, and watershed protection in the same manner as the recharge located in urban areas.
+:::
+
+<br>
+
+### **@Rismawati2024** (InVest SWY model)
++ Rismawati (2024) calculated the economic value of groundwater recharge in the Ciburial spring recharge area (Indonesia) by combining hydrological modeling with a market-based valuation approach.
++ An economic valuation was performed on the water provisioning services 
++ First, she used the **InVEST Seasonal Water Yield model** to estimate the baseflow—representing groundwater recharge—at 32.6 million cubic meters in 2020. 
++ Then, she estimated **the marginal cost of water production** (according to her explanation) by dividing the total cost of producing spring water (adjusted for inflation) by the volume of water produced, resulting in a unit cost of IDR 946.08 per cubic meter.
+  + This is basically a **market price method**. 
++ Multiplying this price by the recharge volume, she arrived at an economic value of IDR 30.86 billion for the groundwater recharge in 2020​.
+
+::: {.callout-caution}
++ Her marginal cost of water approach to estimate the economic value of water supply services is suspicious.
+:::
+
+### [**@Brauman.etal2015**]{style="color:blue"}
++ The study is estimating the cost savings to the local water department from natural groundwater recharge under different land-use scenarios in Kona, Hawaii.
++ They first estimated how different land cover types (native forest, plantation forest, pasture) affect groundwater recharge.
++ Then, they estimated **changes in groundwater level in response to changes in recharge** by expraporating the results of the groundwater model developed by @Oki1999.
++ They estimated the **change in energy costs for water extraction based on the new water table elevation**. A lower water table means more pumping energy is needed, increasing operational costs for the water utility.
++ **The difference in pumping costs before and after the land-use change represents the monetary value of the groundwater recharge service, attributed to that land cover scenario.**
+
+::: {.callout-note}
++ **logic**: land-use change → groundwater recharge → change in water table → change in pumping costs
+
++ **The study considers long-term changes in groundwater recharge rates**, acknowledging that factors affecting recharge rates such as precipitation fluctuate year to year. Also, land-use changes takes time to affect recharge rates.
+> "The paper assumes recharge has a delayed response to land change."
+:::
+
+### @Mitsch.Gosselink2000
++ They considered the value of groundwater recharge services provided by wetlands, though not in a detailed or monetized form.
+  + In Table 2 of their paper, they associate isolated basin wetlands with enhanced values such as “groundwater recharge,” along with flood control and support for amphibians and waterfowl​
++ Although the paper does not separately quantify or isolate the economic value of groundwater recharge per se, it implies that this function is embedded in broader hydrologic services like flood storage and water quality maintenance—both of which depend on recharge dynamics.
+
+<br>
+
+### @Yang.Liu2020 (?)
++ They valued the regulating services provided by groundwater—specifically including water conservation and water purification—using proxy methods such as the shadow project approach and replacement cost method. 
++ For groundwater recharge, which they referred to under "water conservation," they used the **shadow project approach** by estimating **how much it would cost to replace this service using man-made infrastructure (reservoir costs)**. 
++ They used the values of reservoir costs from the literature.
+
+### @Qu.etal2024 (?)
++ Almost same as @Yang.Liu2020.
++ They did not isolate "groundwater recharge" per se as a distinct service but evaluated it indirectly through regulating and supporting services such as:
+  + Water conservation: Valued based on groundwater storage (recharge) using an alternative engineering method.
+  + Carbon sequestration: Estimated using the cost of afforestation as a proxy, with the total carbon stored in groundwater derived from recharge and discharge processes. 
+
+
+
+### @Maliva2014
++ The study derived the economic value of groundwater recharge within the context of Managed Aquifer Recharge (MAR) primarily through cost-benefit analysis (CBA). 
++ The core idea is to compare the monetary benefits of increased groundwater availability or improved water quality against the costs of implementing MAR systems.
+
+
+::: {.callout-note}
+> Managed aquifer recharge (MAR) is defined as "intentional banking and treatment of waters in aquifers". The term MAR was introduced as an alternative to “artificial recharge”, which has the connotation that the use of the water was in some way unnatural.
+:::
+
+
+
+### @Watanabe.Ortega2014 (?)
++ They developped "hydro-carbon model" that quantifies daily flows of water (including groundwater recharge) and carbon in both mass, emergy (solar equivalent joules), and monetary terms based on emergy-to-dollar conversions.
+
+
+
+
+## Previous GEP studies
+### **@Ouyang.etal2020**
+  + The study does not provide a standalone estimate for groundwater recharge, nor does it specify the exact price per unit used for this particular service. Rather, **it embeds recharge in the broader accounting of water provisioning, flood regulation**.
+
+<br>
+
+### **@Huang.etal2022**
+  + They assess the ecosystem service value (ESV) of paddy field ecosystem (PPE) in Tianjin (the northeast of the North China Plain) using multi-source remote sensing data. 
+  + Groundwater recharge service is accounted for as a part of ecosystem service provided by paddy fields (part of the water in the field seeps into the underground to replenish the groundwater resources). 
+  + They used the **market value method** to calculate the ecological value of groundwater replenishment by assigning economic value based on actual irrigation benefits derived from recharge.
+
+$$\text{The value of GW recharge} = (IW + P_r - ET_{growth}) \times P_{w}$$
+
+, where 
+
++ $IW$ is the amount of irrigation water used (mm) during the rice growing season
++ $P_r$ is the accumulated precipitation (mm) during the rice growing season (May-Aug)
++ $ET_{growth}$ is the cumulative evapotranspiration (mm) in the rice growing season,
++ $P_{w}$ is the price of irrigation water (RMB/m3)
+
+<br>
+
+
+### @Deng.etal2025
++ They evaluate the GEP of the Weishui Wetland in Hubei Province.
++ They did not calculate the GEP of groundwater recharge specifically; The valuation captured multiple wetland ecosystem services as a whole — such as biodiversity, **water quality regulation**, and recreational services — but did not isolate or quantify groundwater recharge either biophysically or economically​.
+
++ Groundwater recharge function provided by the wetland is indirectly included in their evaluation of the water conservation function of the wetland.
+  + They used a water balance method to estimate the amount of water conserved which reflects the wetland's capacity to intercept precipitation, reduce evapotranspiration, enhance infiltration, and potentially contribute to groundwater recharge​
++ The monetized value was derived using the shadow engineering approach, referencing the cost of reservoir construction per unit of storage​Deng et al. - 2025 - Va…. Thus, groundwater recharge may be embedded within the broader category, but it was not distinctly assessed.
+
+
+### @Zhang.etal2024
++ GEP of 39 wetlands in the middle reaches of the Yellow River in Ningxia province
++ Groundwater recharge service is not explicitly evaluated. It is included in the water conservation service, which is evaluated using the market price method.
+
+**GEP_{WC} = A(0.85P - ET) \times V_{WC}**
+
+where $A$ is the area of the wetland $m^2$, $ET$ is the actual evapotranspiration , $m$, and $V_{WC}$ is the market price for $GEP_{WP}$ comes from the guide (they used some guideline for the price of water in China).
+
+### @Geng.Liang2021
++  Their study focused entirely on forest ecosystem services in Jiaokou County, Shanxi Province, including water conservation, soil conservation, carbon fixation, oxygen release, atmospheric purification, and biodiversity. Groundwater or aquifer recharge was not mentioned as part of their assessment​.
+
+
+### @Pacetti.etal2024
++ First European pilot of GEP, applying it to mountainous ecosystems.
++ They did not calculate the value of groundwater recharge specifically; they evaluated Groundwater supply – evaluating the use of groundwater resources.
+
+
+### @Joshi.etal2025
+  + The study estimates the Gross Environment Product (GEP) in Uttarakhand, India.
+  + They estimate the potential for water recharge through human endeavors (water conservation structures implemented by both the Forest Department and Hal Nigam Uttarakhand) in conjunction with regional rainfall data. 
+    + A recharge factor, reflecting the proportion of rainfall contributing to aquifer replenishment, was applied to determine the effective volume of water recharged
+  + Then, Water GEP was computed by integrating the annual Water Quality Index (WQI) with the calculated recharge volumes.
+
+> "***the quantification of water recharged through human endeavors** was undertaken by documenting the cumulative volume of water conservation structures implemented by both the Forest Department and Jal Nigam Uttarakhand. The study considered the volume capacity of these structures in conjunction with regional rainfall data to estimate the potential for water recharge. **A recharge factor, reflecting the proportion of rainfall contributing to aquifer replenishment, was applied to determine the effective volume of water recharged** (Table 7).*"
+
+::: {.callout-caution}
++ While groundwater may be indirectly relevant in their "water GEP" category, the paper does not provide a disaggregated or monetary valuation specific to groundwater recharge as a distinct ecosystem service.
++ In their study, a recharge factor, which reflects the proportion of rainfall contributing to aquifer replenishment, is not clearly defined. They assumed a recharge factor of 0.5.
+:::
+
+
+## Overall Comments on the previous studies evaluating the economic value of groundwater recharge.
+
++ **Most of the previous GEP studies do not isolate groundwater recharge as a distinct service. Instead, they embed it within broader categories such as water provisioning.** 
+  + e.g., @Deng.etal2025; @Joshi.etal2025; @Ouyang.etal2020; @Pacetti.etal2024; 
+
++ For the studies that do evaluate groundwater recharge as a distinct service, the value of groundwater recharge is evaluated as part of the economic value of water provisioning services in the recharge area.
+
++ The approach to estimate the value of groundwater recharge service is either:
+  + **Production function approach**
+    + by modeling how a reduction in recharge (e.g., leading to a 1-meter decline in water table) affects the cost of pumping water, which in turn affects optimal water use and yields [@Acharya.Barbier2000]
+  + **Market price approach** 
+    + the value of groundwater recharge = the amount of water recharged  $\times$ price of water
+    + This is the most common approach used in the previous GEP studies[@Deng.etal2025; @Geng.Liang2021; **@Huang.etal2022**, ; @Ouyang.etal2020; @Pacetti.etal2024; @Zhang.etal2024]
+    + Others: @Campbell.etal2020, @Rismawati2024
+  + **Replacement cost approach or Avoided cost approach** 
+    + For example, how much would it be cost to replenish the water with artificial recharge (e.g., the construction of reservoirs) [@Joshi.etal2025]
+    + @Barnes.etal1999 estimated the cost of replacing shallow-dug wells dependent on wetland-based recharge - with deeper boreholes or other alternative water sources in scenarios where weltland degradation diminished recharge.
+    + @Brauman.etal2015 used this when they calculated the cost savings from reduced pumping due to recharge-enhancing land uses.
+    + @Acharya.Barbier2000 also accounts for the impact of groundwater recharge on the cost of pumping water to reflect how recharge influences farm-level input costs and welfare. 
+    + @Maliva2014 estimated the value of groundwater recharge with the cost of implementing Managed Aquifer Recharge (MAR) systems.
+    + Although they did not explicitly account for groundwater recharge per se as a distinct service, @Yang.Liu2020 and @Qu.etal2024 used the shadow project approach to estimate the cost of replacing groundwater recharge.
+
+<br>
+
++ The previous GEP studies disregard the hydrological aspects of groundwater recharge, such as the **time lag between precipitation and recharge**, and **the spatial distribution of recharge**.
+  + Typically, **it is assumed that all the precipitation in a given year that is not used by vegetation or evaporated (i.e., the amount of precipitation subtracted by the evapotranspiration) is the amount of groundwater recharge in that year.**. This assumption implies that the groundwater recharge is instantaneous and uniform across the landscape, which is not the case in reality.
+    + Groundwater recharge is a slow process that can take long time. Thus, 
+  
+  
+::: {.callout-note}
+@Rismawati2024 used the InVEST Seasonal Water Yield model to estimate the volume of groundwater recharge.
+:::
+
+
+# Calculation of GEP of groundwater recharge
+
+## Research Question
+
+Most existing studies estimate the value of groundwater recharge primarily as a provisioning service, focusing on its contribution to current water supply.
+
++ However, this perspective may overstate its short-term importance, as annual recharge volumes are typically small compared to the total stock of groundwater stored in aquifers. Thus, the water provisioning service of groundwater is likely rely heavily on the existing groundwater stock not on the annual recharge.
+
+In this study, I instead evaluate groundwater recharge as a regulating service, emphasizing **its role in sustaining aquifer levels**. From a human welfare perspective, this regulatory function is essential because it helps slow the long-term decline of groundwater tables, thereby **avoiding increased pumping costs and the need for infrastructure adaptation** (e.g., deeper wells, more energy-intensive extraction). To quantify this service, I pose the following research question:
+
++ **“If the recharge didn’t happen, what would it cost to deliver the same amount of water to people or systems that currently benefit from it?”**
+  + For example, water table would decrease in the absence of groundwater recharge. This would lead to the following two consequences [@Acharya.Barbier2000]:
+    + (i) As groundwater falls below a certain level, the costs of pumping water are likely to rise.
+    + (ii) if groundwater levels fall below the maximum depth of the well, the well will no longer be able to supply water, thereby it causes economic losses to the users (people have to give up any revenue they would have received from the water supply, or people have to drill new wells to access the water).
+
+This framing aligns with the logic of the replacement cost approach. The change in pumping costs associated with the change in groundwater levels due to groundwater recharge has been used as a measure of the value of groundwater recharge in the literature (e.g., @Acharya.Barbier2000, @Brauman.etal2015). This allows for estimating the gross ecosystem product (GEP) of recharge based on the costs that would be incurred to replicate its function artificially or offset the consequences of its absence.
+
+### Final Remark
+**In the previous studies, it is often assumed that precipitation in a given year that is infilterd into the soil is the amount of groundwater recharge in that year.**
+
++ While this assumption is valid for some regions (e.g., shallow aquifers), it does not hold true for all regions. Water recharge is a slow process that can take long time. Thus, **the annual recharge volume is not equal to the amount of groundwater recharge in that year**. Past precipitation events can contribute to current recharge. Therefore, omitting this lag time can lead to an underestimation of the value of groundwater recharge in a specific year.
+
+<br>
+
+## Approach: Conceptural Framework
+
+<span style='color:blue'>**I will conduct the analysis on a watershed scale.**</span>
+
+![106 major watersheds of the world - [UN ATLAS OF THE OCEANS](https://www.oceansatlas.org/subtopic/en/c/593/)](./images/world_watersheds.gif){#fig:watershed}
+
+<br>
+
+1. **Estimate the volume of natural groundwater recharge per year for each watershed $i$, $\Delta Q_i$ ($inches$) with the local recharge output (i.e., the amount of rainfall that infiltrates into soil, minus what is evaporated or used by vegetation) from InVEST Seasonal Water Yield (SWY) model under some assumptions.**
+
+<br>
+
+2. **Estimate the marginal cost of pumping water from the aquifer to the surface (e.g., the cost of electricity) as a function of the depth of the water table:** 
+
++ I need to assume functional form of the cost function (for example, see @Acharya.Barbier2000).
+
+![](./images/cost_fn.png){#fig:cost_fn}
+
+<br>
+
+3. **Based on the estimated volume of groundwater recharge $\Delta Q_i$ and the cost function, I will estimate the GEP of groundwater recharge as follows:**
+
++ Suppose that $R_1$ and $R_0$ are the water table levels in the presence and absence of groundwater recharge, respectively. So, the difference in the water table levels $R_1 - R_0$ is equal to the volume of groundwater recharge $\Delta Q_i$. Then, **GEP of groundwater recharge is the area under the cost function curve between $R_0$ and $R_1$.**
+
+In other words, I interpret the value as the benefit of groundwater recharge to maintain the water table at a certain level, which save the pumping costs for the society.
+
+
+## Methodology and Data
+
+### Estimation of Groundwater Recharge
++ **InVEST Seasonal Water Yield (SWY) model** ([here](https://naturalcapitalproject.stanford.edu/invest/seasonal-water-yield)) to estimate the "potential" groundwater recharge at the watershed scale.
+
++ The outputs of the SWY model are quickflow, **local recharge**, and baseflow. Specifically, **local recharge (i.e., the amount of rainfall that infiltrates into soil, minus what is evaporated or used by vegetation)** is the most relevant output for estimating groundwater recharge. 
+
+::: {.callout-warning}
+I need to be careful about the use of local recharge output to estimate groundwater recharge in a specific year. 
++ Although local recharge represents infiltration below the root zone, which may eventually reach the aquifer, **not all of it necessarily becomes recharge depending on local geology, depth to water table, and permeability**.
+  + So, it should be regarded as a potential groundwater recharge estimate, or upper-bound estimate of groundwater recharge.
+  
++ So, **the SWY model does not simulate deep percolation or aquifer dynamics. It only estimates potential recharge, not actual recharge reaching saturated zones.**
+
+<br>
+
++ It might be more realistic to assume that the volume of grondwater recharge at a specific year is contributed by the historical precipitation over the past years (e.g., past 5 years). 
+  + step 1: Derive the historical water flows that reaches the watershed from precipitation.
+  + step 2: Derive the volume of water that infiltrates into the soil and reaches the aquifer in that specific year by those historical water flows (use some weighting factors?).
+:::
+
+<br>
+
+### Assumptions
+
++ **I need to assume that some fixed proportion of the local recharge (e.g., 50%) becomes groundwater recharge**.
+  + This is because the local recharge is not equal to the groundwater recharge. Some portion of the local recharge will be soaked up by the soil and vegetation. 
+  + For example, I might be able to approximate the proportion of local recharge that becomes groundwater recharge by comparing the local recharge value from the SWY model with the actual groundwater recharge rate in the past.
+   + For example, if the estimated local recharge is 100 mm and the actual groundwater recharge rate is 50 mm in a specific year for a given watershed, then I can assume that 50% of the local recharge becomes groundwater recharge for that watershed.
+
++ In addition to the fixed proportion of local recharge, I need to assume that only a portion of local recharge that enters **the aquifer recharge areas** are potentially available for groundwater recharge. 
+  + @Kallali.etal2007 
+  + [Identifying Optimal Groundwater Recharge Locations](https://www.srbc.gov/our-work/programs/planning-operations/identifying-optimal-groundwater-recharge-locations.html#:~:text=Recharge%20is%20infiltration%20of%20water%20from%20the,water%20supply%20and%20as%20baseflow%20to%20streams.&text=Critical%20Aquifer%20Recharge%20Areas%20(CARAs)%20CARAs%20are,pressures%20which%20impact%20groundwater%20quality%20or%20quantity.)
+
+
++ Also, **I need to assume that the water is immediately recharged groundwater.** In other words, it should not take long time (years) to recharge the aquifer. 
+
++ Following @Brauman.etal2015, it is assumed that **a linear relationship between fractional recharge and absolute water table change.**
+
+
+### Data requirements for the SWY model
+
++ DEM
++ Precipitation
++ Evapotranspiration
++ Soil information
++ Land use land cover
++ Rain Events Table
++ Biophysical table
+
+## Pumping Cost Function
+
++ Pumping costs for irrigation are well understood from engineering research, and can be accurately predicted for most irrigation systems (@Williams.etal1996).
+  + Several economic studies related to groundwater management literature relied on the engineering formulas to estimate the irrigation pumping costs.
+
++ The level of goundwater table can be inferred from **Gravity Recovery and Climate Experiment (GRACE) Satellite Data** ([Here](https://sealevel.nasa.gov/missions/grace)) 
+  + GRACE doesn’t directly measure recharge, but detects **changes in total water storage (TWS)**.
+  + Not direct recharge estimates, and coarse resolution (typically >100,000 km²). 
+  + This datasets are used by @Eicker.etal2016, @Scanlon.etal2018, @Tapley.etal2019, @Liu.etal2022, for example.
+
+
+## Expected Results
++ I expect that the cost is not that large, because volume (stock) of available groundwater would be still large even if we missed the amount of groundwater recharge for a single year. Thus, groundwater recharge may seem to have **minimal immediate economic value**.
+
++ I expect that the economic values of groundwater recharge have spatial and temporal variation.  
+
+
+## Other Models and Datasets
+
+### Simulation Model
+**WGHM (WaterGAP Global Hydrological Model)**
+
+> WaterGAP Global Hydrological  Model computes calculates time series of surface and subsurface runoff, groundwater recharge, and river flows along with water storage variations in canopy, snow, soil, groundwater, rivers, lakes, and wetlands.” (Masood et al., 2022)
+
+<br>
+
++ Read @Sanford2002
++ Read @Doble.Crosbie2017
+
+
+
+### Datasets
+
+**Groundwater recharge rate for the US**
+
++ **The USGS National Hydrography Database (NHD) spatial assessment of groundwater recharge** ([Here](https://www.usgs.gov/national-hydrography/nhdplus-high-resolution))
++ This dataset was used by [@Campbell.etal2020]. They used the “Estimated Mean Annual Natural Groundwater Recharge, 2002” for the mid-Atlantic region. This layer was specifically created to estimate the mean annual natural groundwater recharge, in millimeters, per watershed catchment segment in the application of the national SPAtially Referenced Regression On Watershed attributes (SPARROW) model.
+
+
+## Cautions:
+
+
+### **Recharge maintains long-term viability—not just immediate supply**
+
+Even if there's “plenty of water” in a given year, **ongoing recharge slows depletion**. Without it, aquifers could face:
+
+- **Progressive decline of the water table**, increasing energy costs over time,
+- **Reduced yields from existing wells**, requiring deeper drilling or new infrastructure,
+- **Drying of shallow wells** (especially critical in rural and poor communities),
+- **Saltwater intrusion** in coastal aquifers (e.g., parts of Mozambique or Bangladesh),
+- **Land subsidence** in extreme depletion zones (e.g., Central Valley, California).
+Recharge doesn’t necessarily prevent collapse immediately, but it **buffers and delays** these outcomes.
+
+::: {.callout-note}
+But GEP is focused on the **value of ecosystem service flows actually delivered within that year**—not potential future losses. So, this is not relevant. 
+:::
+
+
+### **Recharge supports more than just human extraction**
+
+In many areas, groundwater discharge sustains **wetlands, springs, river baseflows**, and **ecosystem functions** that are **valuable to humans**. Without recharge:
+
+- **Spring-fed water bodies** may dry,
+- **Riparian habitats** degrade,
+- **Biodiversity, tourism, and water quality benefits** can be lost.
+
+So even if people can still pump water, **the wider welfare effects** (e.g., to agriculture, fisheries, or cultural services) may be **non-negligible**.
+
+::: {.callout-note}
+But this depends heavily on the local hydrology and ecosystem use patterns. It is highly challenging to account for context-specific values of these services.
+:::
+
+
+### InVEST SWY model limitations
++ The InVEST Seasonal Water Yield (SWY) model does not directly simulate groundwater recharge, nor does it account for lagged effects from past years' precipitation. It provides an estimate of how much water runs off or percolates past the root zone, but it does not track soil moisture or subsrface flow across years. 
++ It assumes a one-year water balance. In other words, all recharge is assumed to occure (or not) within the year of simulation.
++ It does not incorporate memory or carryover effects from prior years' precipitation.
++ **In summary, it might not be suitable for modeling aquifer recharge explicitly.**
+
+
+
+---
+
+# Groundwater Rechage Models
+
+::: {.callout-important}
+## My Goal:
+I am instrested in:
+
++ Estimating groundwater recharge
++ and captureing multi-year precipitation effects on recharge. 
+:::
+
+
+::: {.callout-tip}
+## Key Words:
+
+**"memory effects"**
++ For example, see Section 4.1 Auto- and cross-correlations in @Cai.Ofterdinger2016.
++ Also, see @Mangin1984
+:::
+
+
+
+## Previous Studies: Memory Effects on Groundwater Recharge
+
+### **@Hu.etal2025**
+
++ western Mongolian Plateau
++ examine the dynamics of groundwater leakage and its implications for terrestrial water storage (TWS) and groundwater stability from 2002 to 2022.
++ Analyzes how warm-season precipitation variability controls groundwater recharge in permafrost-affected basins.
+
+### **@Oluwaniyi.etal2023**
++ Used GRACE satellite data and the Water Table Fluctuation (WTF) method.
++ Found a 1–2 year lag between precipitation changes and groundwater storage response.
++ The study highlights the potential cumulative influence of multi-year climatic conditions on groundwater recharge trends, suggesting a complex relationship that goes beyond just the direct influence of precipitation.
+
+::: {.callout-note}
+## Substantial temporal memory impact
+They found that the groundwater system exhibits a strong temporal dependence, where the current and future states are highly correlated with past states. This long-term memory or persistence in the system's behavior challenges the assumption of stationary dynamics and suggests that the temporal component plays a significant role in the groundwater storage dynamics.
+:::
+
+### **@Liu.etal2023b**
++ Employed stepwise state modeling across global watersheds.
++ Demonstrated lagged and amplified streamflow responses due to prolonged drought.
++ Recharge patterns altered after ~7 years of drought, highlighting **deep system memory**.
+
+### **@Schreiner-McGraw.Ajami2021**
++ Combined hydrological modeling and observational datasets in ungauged basins.
++ **Found 2–5 year lags in recharge in dry climates.**
++ **Recharge delay increased under drought without anthropogenic management.**
+
+::: {.callout-note}
+## Their Model:
+
+:::
+
+### [**@Liu.etal2025**]{style="color:blue"}
++ Used wavelet analysis on soil moisture and precipitation data.
++ Quantified monthly-to-yearly lags in precipitation-recharge relationship.
++ Emphasized seasonality and antecedent moisture conditions.
+
+::: {.callout-important}
+## Interesting Findings
+*... a change in the mechanism of precipitation recharge to groundwater, which is likely closely related to intensified human activities, changes in the irrigation water extraction methods, and over-extraction of groundwater.*
+:::
+
+
+### [**@Cai.Ofterdinger2016**]{style="color:blue"} Important
+
+::: {.callout-important}
+Highlights:
++ Direct groundwater recharge to shallow or deep bedrocks on hillslope is very limited.
++ Direct recharge takes place within the subsoil and soil/bedrock interface.
++ Low intensity rainfall events (<=1 mm/h) have higher impact on recharge rate.
++ Recharge rates of 42–197 mm/yr were estimated.
+:::
+
+
+### **@AndersonJr..Emanuel2008**
++ Modeled the effects of El Niño and Pacific Decadal Oscillation on baseflow.
++ Found 2-month to multi-year lags in response, depending on the basin.
++ Emphasized teleconnection impacts on recharge.
+
+
+### [**@Sun.andLi2024**]{style="color:blue"} Important
++ *The water tbale fluctuation (WTF) method is popular fo groundwater recharge (GR) estimation, but its accuracy is challenged when applied in arreas with thick vadose zones because of the signal lag and attenuation with depth and uncertainties from barometric pressure effect and lateral flow.*
++ Proposed a improved method for estimating groundwater recharge using a combination of the linear regression method and Darcy's law.
+  + Integrated water table fluctuation data and vegetation indices.
++ Lags ranged from 1 to 9 months, modulated by evapotranspiration and land cover.
++ Proposed methodological improvement for thick vadose zones.
+
+### [**@Wolf.etal2023**]{style="color:blue"} Important
+
++ Studied snow-dominated mountainous catchments using multi-year lag regression models.
++ Recharge depended not just on current snowmelt but on prior 2–3 years’ precipitation.
++ Suggested snow legacy effects play a crucial role.
+
+
+::: {.callout-important}
+## Findings:
+*More broadly, these results highlight the importance of including the influence of antecedent climate on groundwater storage when modeling and managing water supplies from seasonally snow-covered catchments.*
+:::
+
+
+### [**@Rossman.etal2014**]{style="color:blue"}, Nebraska
+
++ Modeled climate-driven recharge lag in semi-arid regions.
++ Identified vadose zone as buffering and delaying recharge by 6–18 months.
+
+### **@Meter.Basu2015**
+
++ Introduced legacy storage modeling with parsimonious watershed model.
++ Though focused on nutrients, emphasized how storage buffers and delays recharge signals over multi-decadal timescales.
+
+## Literature Review: Process-based Modeling of Groundwater Recharge
+
+### **@Chandra.Sahoo2024**: SWAT model
++  Damodar Basin, India
++ Quantify groundwater recharge under climate and LULC change scenarios.
++ Investigate multi-year impacts using downscaled CMIP6 GCM outputs.
++ Explicit estimation of groundwater recharge as the target variable.
++ Simulates seasonal recharge variability and trend under changing precipitation patterns.
++ Uses SWAT calibrated to multi-year data for both streamflow and recharge.
+
+### [**@Abbaspour.etal2015**]{style="color:blue"}: SWAT model, important
++ **Goal**: Simulate hydrology and nutrient transport across Europe using the SWAT model at high spatial resolution.
++ **Study Area**: 6,000 subbasins across Europe, modeling streamflow and nitrate concentrations.
++ **Model**: Traditional SWAT, later concepts used in SWAT+.
++ **Calibration**: Used SWAT-CUP with SUFI-2 for multi-site calibration of streamflow and nitrate at 117 stations.
++ **Data**:
+  + 500m-resolution CORINE land cover.
+  + FAO soil maps, ERA-Interim climate data.
++ **Key Contributions**:
+  + Demonstrated that large-scale physically-based modeling is feasible with reasonable calibration accuracy.
+  + Addressed uncertainty quantification and parameter regionalization.
+
+Recharge: Not the primary output but included in the water balance components modeled.
+
+
+### [**@Abbaspour.etal2019**]{style="color:blue"}: SWAT model, important
+
+**Goal**: Create standardized global input datasets to facilitate worldwide SWAT/SWAT+ applications.
+
++ **Data Layers Provided**:
+  + Global Soil Maps: Harmonized World Soil Database (HWSD)
+  + Land Use Maps: GlobCover, CORINE, and others.
+  + Climate Data: Historical (CRU, ERA), and projected climate (CMIP5).
+  + Evapotranspiration: MODIS-based actual evapotranspiration (AET)
+  
++ **Utility**:
+  + Datasets formatted to plug directly into SWAT/SWAT+ and SWAT-CUP workflows.
+  + Supports continental and global hydrological modeling, including water balance components such as groundwater recharge.
+
++ **Key Contributions**:
+  + Enables global-scale hydrological simulations with consistent data structure.
+  + Aims to reduce data preparation bottlenecks in large-scale modeling.
+  + Supports both current condition and climate change scenario modeling.
+
+
+
+
+
+
+---
+
+## Model Overview: Process Modeling
++  USGS Soil-Water-Balance (SWB) model.
+  + @Stephen.etal2021
+
++ SWAT+ (updated SWAT for better process control)
++ MIKE SHE (for more detailed coupled modeling)
++ WALRUS (for shallow aquifer contexts)
+
+
+# Datasets
+ + 235 major water basins, "dlineated using a combination of catchment and geopolitical boundaries" [@Turner.etal2019]
+
++ Evapotranspiration (ET) data:
+  + See @Hu.etal2025
