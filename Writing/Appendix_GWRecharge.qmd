@@ -2,12 +2,12 @@
 title: "Ecosystem Service: Groundwater Recharge Service, a Regulating Service"
 format:
   docx:
-    reference-doc: ../z_Template/word_template_noindent.docx
+    reference-doc: ./z_Template/word_template_noindent.docx
     toc: false
     toc-depth: 3
-    number-sections: false
+    number-sections: true
     colorlinks: true
-bibliography: ../../../2_Water_General.bib
+bibliography: ../../../2_Water.bib
 # csl: science-without-titles.csl
 execute:
   cache: false
@@ -19,12 +19,12 @@ execute:
 ```{r}
 #| include: false
 library(here)
-i_am("Groundwater_recharge/Gitcontrolled/Writing/Appendix_GWRecharge.qmd")
+# i_am("Groundwater_recharge/Gitcontrolled/Writing/Appendix_GWRecharge.qmd")
 ```                                                             
 
-# Introduction {-}
+# Introduction
 <!-- Groundwater accounts for 99% of all liquid freshwater on Earth [@@UNWater2022] -->
-## Definition of Groundwater Recharge Ecosystem Service {-}
+## Definition of Groundwater Recharge Ecosystem Service
 Groundwater recharge broadly describes the replenishment of water to a groundwater flow system [@Winter2000]. IT is a part of the hydrological regulation process. There are two mains ways about how groundwater recharge service contributes to human well-being: (i) provision of water resources for human use (drinking, irrigation, and industrial use) and (ii) regulating the levels of groundwater table, which make the access to groundwater resources easier and more reliable.
 
 ## Previous literature
@@ -35,7 +35,7 @@ As a studies that explicitly value groundwater recharge service per se, @Acharya
 
 <!-- Another study by @Barnes.etal1999 evaluate the value of ecosystem services provided by wetlands in the Zambezi River basin system (The largest portion of the basin lies in Zambia). They used the replacement cost approach to estimate the value of groundwater recharge service provided by wetlands for domestic and commercial water supply. Specifically, they estimate what it would cost to provide the same amount of water to users if wetlands no longer recharged the aquifer. Then,  -->
 
-## Research Question {-}
+## Research Question
 The previous GEP literature does not provide a standalone estimate for groundwater recharge service, rather the value of the service is accounted primarily as a provisioning service, focusing on its contribution to current water supply. Meanwhile, there are some agricultural economics and hydrology studies that focus on valuing groundwater recharge service as a regulating service. 
 
 To fill this gap, I estimate the value of groundwater recharge service as a regulating service, focusing on its role in stabilizing aquifer levels. From the perspective of human well-being, this regulating service is important because it helps maintain (or slow) the long-term decline of groundwater levels, thereby avoiding increased pumping costs to extract groundwater and the need for investment in alternative water supply sources or infrastructure adaptation (e.g., drilling deeper wells, more energy-intensive pumping system, or building reservoirs). To quantify this service, I pose the following question: *"If the recharge didn’t happen, what would it cost to deliver the same amount of water to people or systems that currently benefit from it?"*.
@@ -45,13 +45,14 @@ For example, groundwater table would decrease in the absence of groundwater rech
 This framing aligns with the idea of the replacement cost approach. The saving in pumping costs associated with the groundwater recharge service has been used as a measure of the value of groundwater recharge in the literature (e.g., @Acharya.Barbier2000, @Brauman.etal2015). This allows for estimating the gross ecosystem product (GEP) of recharge based on the costs that would be incurred to replicate its function artificially or offset the consequences of its absence.
 
 
-# Methods {-}
+# Methods
 
-I will conduct the analysis on a watershed scale. 
+I will conduct the analysis on a watershed scale. The watershed is a common scale for hydrological analysis because it is a natural hydrological unit that collects precipitation and drains it into a common outlet, such as a river or lake. The first step of my analysis is to prepare which watersheds to analyze. To this end, I use two datasets: one is the major groundwater basin boundary dataset obtained from @Niazi.etal2024, and the other is the watershed boundary data from HydroBASINS v1 (Level 6) [@Lehner.Grill2013]. Specifically, I identified the watersheds that overlap with major groundwater basins. In total, 7,722 watersheds are selected for the analysis. 
 
-@fig-watershed shows the 106 major watersheds of the world. The watershed is a convenient scale for this analysis because it is a natural hydrological unit that collects precipitation and drains it into a common outlet, such as a river or lake. 
+**insert a figure here**
 
-![106 major watersheds of the world - [Source: UN ATLAS OF THE OCEANS](https://www.oceansatlas.org/subtopic/en/c/593/)](z_images/world_watersheds.gif){#fig-watershed}
+<!-- 106 major watersheds of the world. The watershed is a convenient scale for this analysis because it is a natural hydrological unit that collects precipitation and drains it into a common outlet, such as a river or lake.  -->
+<!-- ![106 major watersheds of the world - [Source: UN ATLAS OF THE OCEANS](https://www.oceansatlas.org/subtopic/en/c/593/)](z_images/world_watersheds.gif){#fig-watershed} -->
 
 Due to the lack of data on actual measurement of natural groundwater recharge rate globally, I will use the InVEST Seasonal Water Yield (SWY) model to estimate the amount of groundwater recharge provided from natural ecosystems. I use one of the key outputs of the SWY model called local recharge, which is the amount of net rainfall that infiltrates into soil beyond the root zone. 
 
@@ -82,21 +83,94 @@ $$
 The InVEST SWY model requires the following data inputs: (i) Monthly precipitation (raster data), (ii) Monthly reference evapotranspiration (raster data), (iii) Digital elevation model (raster data), (iv) Land use/land cove (raster data), (v) Soil hydrologic group, and (vi) Biophysical table (.csv file). All of these data are publicly available. The data sources are summarized in Table X. The data on energy price is obtained from @IEA2019.
 
 
-| Data Type | Description | Source |
-|-----------|-------------|--------|
-| Monthly precipitation | Raster data of monthly precipitation | [WorldClim](https://www.worldclim.org/data/worldclim21.html) |
-| Monthly reference evapotranspiration | Raster data of monthly reference evapotranspiration | [WorldClim](https://www.worldclim.org/data/worldclim21.html) |
+## Estimate Groundwater Recharge Rate with InVEST SWY Model
+
+In this section, I describe the data I use to estimate groundwater recharge rate with the InVEST SWY model. In the following section, I will outline the data required for running the InVEST SWY model in the bold section. Also, I provide the source of each dataset and briefly describe how the input data is prepared for the InVEST SWY model. For more details on the data preparation and how I calibrate the model parameters to the local conditions of each watershed, please see the section of Processing Steps and Calibration.
+
+### Data Inputs for InVEST SWY Model
+
++ **Watershed Boundary (AOI) Data**
+  + HydroBASINS v1 (Level 6) watershed boundary data [@Lehner.Grill2013]
+  + Major aquifer boundary data from [@Niazi.etal2024]
+
++ **Land Use/Land Cover Data**
+  + LULC data is obtained from European Space Agency Climate Change Initiative land cover at 300m resolution
+
++ **Biophysical Table Data**
+  + Curve number values from GCN250 dataset [@Jaafar.etal2019]
+  + Global data of monthly crop evapotranspiration coefficient (Kc) is not available. I calculate it using the reflectance-based Kc (NDVI-Kc methods). The NDVI data is obtained from monthly data on MODIS/Terra Vegetation Indices with 0.05 degree resolution [@Didan2021]. See the section of Processing Steps and Calibration for details on the NDVI-Kc methods.
+
++ **Digital Elevation Model (DEM)**
+  + Void-filled DEM data with 15 arc-seconds resolution is obtained from HydroSHEDS v1.1 [@Lehner.etal2008]. 
+
++ **Monthly precipitation and reference evapotranspiration data** 
+  + Daily precipitation and reference evapotranspiration data is obtained AgERA5 dataset (version 2.0) from Copernicus Climate Change Service (C3S) Climate Data Store (CDS) [@CopernicusClimateChangeServic2020]. This is gridded weather datasets with 0.1 degree resolution. For each grid cell, I calculate the monthly mean precipitation and reference evapotranspiration values.
+  
++ **Monthly Rain Events Table by Climate Zone**
+  + A Rain event table is a table that contains the number of monthly rain events ($\ge 0.1 mm$) for each watershed. By default, the InVEST SWY model only requires rain event table for entire watershed. However, given the spatial variation of the rainfall events, I prepare the rain event table for each climate zone within each watershed.  Climate zone data is obtained from the Köppen-Geiger classification map for the period 1991-2020 downloaded from GloH2O [@Beck.etal2023]. For each watershed, I calculate the number of monthly rain events ($\ge 0.1 mm$) for each climate zone using the daily precipitation data.
+
+
++ **Monthly Alpha Table**
+  + Following the description in the InVEST SWY model documentation, the monthly alpha table is prepared by calculating the ratio of the previous month's precipitation to the total precipitation for each watershed (i.e., $\alpha_{i,m} = P_{i,m-1} / \sum_{m=1}^{12} P_{i,m}$). 
+
++ **Soil Hydrologic Group**
+  + HYSOGs250m dataset [@Ross.etal2018] is used to define the soil hydrologic groups (HSGs) for each watershed. This dataset provides the global hydrologic soil groups at 250m resolution.
+
++ **Threshold Flow Accumulation value**
+  + I derived the threshold flow accumulation value for each watershed based on the global layer of streams (HydroRIVERS v1) and a flow accumulation map. Both datasets are obtained from HydroSHEDS dataset [@Lehner.Grill2013]. 
+  
++ **Beta_i Parameter**
+  + For each watershed, Beta_i Parameter is calculated from the DEM data and the flow accumulation map of that watershed. See the section of Processing Steps and Calibration for details on how to calculate the Beta_i parameter.
+
++ **Gamma Parameter**
+  + Using the soil hydrologic group data, I set the Gamma parameter for each watershed. See the section of Processing Steps and Calibration for details on how to calculate the Gamma parameter for each watershed.
+
+
+## Calibrating the Model Parameters
+
+In this section, I describe how I calibrate the model parameters of the SWY model to the local conditions of each watershed. The InVEST SWY model requires several parameters to be calibrated for each watershed, including the threshold flow accumulation value, the biophysical table data, Beta_i and Gamma parameters.  Although it is common to use the default values for these parameters, I calibrate them to better represent the local conditions of each watershed.
+
+### Threshold Flow Accumulation Value
+
+Using the flow accumulation map and the global layer of streams, I computed the threshold flow accumulation value for each watershed. The threshold flow accumulation value is the minimum number of upstream cells that contribute to a stream cell. I extracted the flow accumulation value along the streams in the watershed and used the 25th percentile of the flow accumulation values as the threshold value. 25th percentile is used to avoid the outliers in the flow accumulation values. 
+
+### Biophysical Table Preparation
+Biophysical table data for the InVEST SWY model requires soil-group specific curve numbers and monthly crop evapotranspiration coefficient (Kc) values for each land use/land cover (LULC) class. There is no single numbers for the curve number and Kc values for global scale. To account for the heterogeneity of the curve number and Kc values across regions, I calibrate the biophysical table data for each watershed. 
+
+For watershed-specific curve numbers, I use the GCN250 dataset [@Jaafar.etal2019]. GCN250 dataset provides the gridded data of curve numbers for global scale at 250m resolution. Using the GCN250 dataset, the map of soil hydrologic groups (HYSOGs250m), and the LULC data for the watershed, I calculated the mean values of curve numbers for each soil group and LULC class.
+
+Global Kc values are not available nor there is no consensus on the Kc values for each of the various land use/land cover classes. However, it is safe to assume that the Kc values for some land use/land cover classes are constant and similar across months and regions. For example, the Kc values for evergreen forests, grasslands, and wetlands are generally constant throughout the year. 
+
+
+Therefore, I use constant Kc value for land use/land cover classes including including evergreen forest, deciduous forest, shrublands, urban, bare ground, snow/ice, and open water. These constant Kc values are borrowed from the previous studies [@Allen.etal1998; @Liu.etal2017]. Meanwhile, for the other land use/land cover classes such as rainfed or irrigated cropland and deciduous forests, the Kc values vary by month. For these classes, I calculate the monthly Kc values using the reflectance-based Kc (NDVI-Kc methods). This reflectance-based Kc method is widely used in the previous studies to estimate the Kc values for various land use/land cover classes (e.g., @Bausch1995; @Choudhury.etal1994; @Glenn.etal2010; @Kamble.etal2023; @Rayes-Gonzalez.etal2015). Following the previous studies, I calculate the monthly Kc values for each LULC class using the NDVI-Kc methods. The monthly NDVI data is obtained from the MODIS/Terra Vegetation Indices with 0.05 degree resolution [@Didan2021]. 
+
+With NDVI data, Kc value is calculated using the following equation [@Bausch1995]:
+
+$$K_c = 1.37 \cdot NDVI = 0.069$$
+
+
+### Beta_i and Gamma Parameters
+
+Another parameter that needs to be calibrated for each watershed is the Beta_i and Gamma parameters. The Beta_i parameter in the SWY model represents the fraction of upgradient water subsidy that is available for evapotranspiration at a given location. Following the description in the InVEST SWY model documentation, Beta_i parameter is calculated as the topographic wetness index (TWI):  
+
+$$TWI = ln(\frac{A}{tan b})$$
+
+, where $A$ is upstream contributing area (i.e. A = flow accumulation $\times$ cell area, in $m^2$) and $b$ is the slope in radians. $A$ is calculated from the flow accumulation map. The slope is calculated from the DEM data using the `terrain` function in the `terra` R package. After deriving TWI for each grid cell of the DEM data, I calculate the mean TWI value within each watershed. This mean TWI value is used as the watershed-specific Beta_i parameter for each watershed in the SWY model to represent the average topographic subsidy available to each watershed.
+
+The Gamma parameter controls how much of the water recharge is made available to the downgradient pixels. Gamma = 0 means that no water moves downgradient from the pixel, while Gamma = 1 means that all local recharge becomes available to downgradient pixels. This parameter is set to 1 by default in the SWY model. However, I set the Gamma parameter for each watershed based on the soil hydrologic group raster data, which is one of the input data for the SWY model as described above. This raster dataset classifies each grid cell into one of four USDA-defined hydrologic soil groups: A (group 1), B (2), C (3), and D (4). As the group number increases, soils become more impermeable, with Group A having the highest infiltration rates and Group D having the lowest.  
+
+Given this gradient in lateral subsurface connectively, I assigned following Gamma values to each group:  0.95 for Group A, 0.85 for Group B, 0.75 for Group C, and 0.55 for Group D. Then, for each watershed, I calculated an area-weighted average of these Gamma values based on the fractional coverage of each soil group. The resulting watershed-specific Gamma values are used as input to the SWY model to better represent spatial differences in subsurface flow connectivity.
 
 
 
 
-# Limitations and Future Work {-}
+# Limitations and Future Work
 
 While I use the cost of pumping water from the aquifer to the surface as a proxy for the value of groundwater recharge service, the decreasing water table can also lead to other adverse economic consequences in other forms. For example, the declining water table decreases the well yield (i.e., the amount of water that can be pumped from a well per unit time). In the context of agricultural production that depends on irrigation, this can lead to reduce crop yields, as farmers may not be able to satisfy the water demand of their crops in a timely manner. The loss of productivity and the consequential income loss is not captured in the current analysis.
 
 \newpage
 
-# References {-}
+# References
 
 
 
