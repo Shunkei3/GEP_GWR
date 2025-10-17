@@ -68,7 +68,7 @@ $$K_c = 1.37 \cdot NDVI = 0.069$$
 
 ### Beta_i and Gamma Parameters
 
-Another parameter that needs to be calibrated for each watershed is the Beta_i and Gamma parameters. The Beta_i parameter in the SWY model represents the fraction of upgradient water subsidy that is available for evapotranspiration at a given location. Following the description in the InVEST SWY model documentation, Beta_i parameter is calculated as the topographic wetness index (TWI):  
+Another parameter that needs to be calibrated for each watershed is the Beta_i and Gamma parameters. The Beta_i parameter in the SWY model represents the fraction of upgradient water subsidy that is available for evapotranspiration at a given location. Following the description in the InVEST SWY model documentation (see Appendix 2 in the document), Beta_i parameter is calculated as the topographic wetness index (TWI):
 
 $$TWI = ln(\frac{A}{tan b})$$
 
