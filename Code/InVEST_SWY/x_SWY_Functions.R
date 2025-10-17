@@ -96,7 +96,7 @@ fn_comp_prep_inputs <-
     which_region, 
     which_aoi, 
     save_dir_return = FALSE, 
-    overwrite = TRUE, 
+    overwrite = TRUE, # This argument is not used now.
     # If you want to test with a custom AOI, use the following two arguments
     custom_aoi_provided = FALSE, 
     custom_save_dir = NULL

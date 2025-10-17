@@ -21,7 +21,6 @@ Default value: 1.
   + `fn_get_gamma` to calculate gamma parameter for a given watershed
   + `get_beta_twi` to calculate Beta_i parameter for a given watershed
 
-
 ```{r}
 library(here)
 i_am("Scr/Code/InVEST_SWY/PrepData/Parameters/Prep_beta_gamma.qmd")
@@ -38,6 +37,19 @@ quarto::qmd_to_r_script(qmd = here("Scr/Code/InVEST_SWY/x_SWY_Functions.qmd"))
 # Load functions
 source(path_source_Rfunc)
 ```
+
+# Prerequisites
+
+```{r}
+# /*===== Watersheds =====*/
+hybas_tbl <- 
+  readRDS(file.path(int_dir, "case_hybas_tbl.rds")) %>%
+  tidyr::unnest(cols = "tg_hybas_sf") %>%
+  st_as_sf()
+
+# format(object.size(hybas_tbl_r), units = "auto")
+```
+
 
 
 # Run (loop over regions)
