@@ -1,0 +1,49 @@
+---
+title: "Create a table for beta and gamma parameters for InVEST SWY model"
+---
+
+# Objective
++ Create a table for beta and gamma parameters for InVEST SWY model
+
+# NOTE
+According to [InVEST SWY documentation](https://storage.googleapis.com/releases.naturalcapitalproject.org/invest-userguide/latest/en/seasonal_water_yield.html#data-needs):
+
++ **Beta_i Parameter (ratio, required)**: The proportion of the upgradient subsidy that is available for downgradient evapotranspiration.
+Default value: 1.
+
++ **Gamma Parameter (ratio, required)**: The proportion of pixel local recharge that is available to downgradient pixels.
+Default value: 1.
+
+
+# Setup
+
++ Two functions are defined in `x_SWY_Functions.qmd`:
+  + `fn_get_gamma` to calculate gamma parameter for a given watershed
+  + `get_beta_twi` to calculate Beta_i parameter for a given watershed
+
+
+```{r}
+library(here)
+i_am("Scr/Code/InVEST_SWY/PrepData/Parameters/Prep_beta_gamma.qmd")
+
+
+# /*===== Load Functions =====*/
+# Always load the updated version of the code
+path_source_Rfunc <- here("Scr/Code/InVEST_SWY/x_SWY_Functions.R")
+if(file.exists(path_source_Rfunc)){
+  file.remove(path_source_Rfunc)
+}
+# Create R script from qmd
+quarto::qmd_to_r_script(qmd = here("Scr/Code/InVEST_SWY/x_SWY_Functions.qmd"))
+# Load functions
+source(path_source_Rfunc)
+```
+
+
+# Run (loop over regions)
+
+```{r}
+
+```
+
+
