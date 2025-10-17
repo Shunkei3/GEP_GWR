@@ -6,6 +6,7 @@ README.html
 *.RData
 *.Ruserdata
 *.Rproj.user
+*.html
 
 z_CoSWAT
 Writing/z_Template
