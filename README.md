@@ -91,3 +91,6 @@ Given this gradient in lateral subsurface connectively, I assigned following Gam
 
 
 
+
+
+
