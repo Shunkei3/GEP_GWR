@@ -1,5 +1,6 @@
 .DS_Store
 README.html
+README_files
 *_files
 *.Rproj
 *.Rhistory
@@ -12,3 +13,13 @@ z_CoSWAT
 Writing/z_Template
 Writing/z_images
 *.docs
+
+# Ignore some folders
+# These folders are mostly generated for my convenience and not necessary for others
+**/z_copy_code
+**/y_task_SampleRun
+**/y_TestRun
+**/z_others
+**/z_copy_code
+**/z_obsolete
+
