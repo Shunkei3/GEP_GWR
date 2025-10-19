@@ -249,7 +249,7 @@ fn_get_dem_aoi <- function(region_abbr_var, aoi_sf_var, save_dir_var){
 }
 
 
-fn_get_soil_group_aoi <- function(aoi_sf_var, save_dir_var) {
+fn_get_soil_group_aoi <- function(aoi_sf_var, save_dir_var, results = "save") {
 
   # === Load Soil Group === #
   soil_group_aoi <- 
@@ -264,14 +264,33 @@ fn_get_soil_group_aoi <- function(aoi_sf_var, save_dir_var) {
   # plot(soil_group_aoi)
   # unique(values(soil_group_aoi))
 
-  # === Save === #
-  writeRaster(
-    soil_group_aoi,
-    here(save_dir_var, "soil_group.tif"),
-    overwrite = TRUE,
-    datatype  = "INT1U",  # fits 0..255
-    NAflag    = 255
-  )
+    
+  if(results == "return"){
+    # === Return the result === #
+    return(soil_group_aoi)
+
+  } else if (results == "save and return"){
+    # === Save and Return the result === #
+    writeRaster(
+      soil_group_aoi,
+      here(save_dir_var, "soil_group.tif"),
+      overwrite = TRUE,
+      datatype  = "INT1U",  # fits 0..255
+      NAflag    = 255
+    )
+
+    return(soil_group_aoi)
+
+  } else {
+    # === Save the result (default) === #
+    writeRaster(
+      soil_group_aoi,
+      here(save_dir_var, "soil_group.tif"),
+      overwrite = TRUE,
+      datatype  = "INT1U",  # fits 0..255
+      NAflag    = 255
+    )
+  }
 }
 
 
@@ -454,7 +473,7 @@ fn_get_biophysical_table <- function(aoi_sf_var, save_dir_var){
 
   write.csv(
     biophysical_tbl, 
-    here(save_dir_var, "biophysical_table.csv"),
+    file.path(save_dir_var, "biophysical_table.csv"),
     row.names = FALSE,
     na = "NaN" 
   )
@@ -462,7 +481,10 @@ fn_get_biophysical_table <- function(aoi_sf_var, save_dir_var){
 
 
 fn_get_monthly_et0 <- function(aoi_sf_var, save_dir_var, type = "mean") {
-  # type = "mean"  
+  # Test Run:
+  # aoi_sf_var <- hybas_tbl[1,]
+  # save_dir_var <- file.path(swy_dt_dir, aoi_sf_var$region_abbr, aoi_sf_var$HYBAS_ID)
+  # type <- "mean"
 
   et0_m_aoi <- 
     rast(file.path(raw_dir, "Weather", paste0("et0_m_", type, "_Agromet_raw_", year, ".tif"))) %>%
@@ -489,6 +511,21 @@ fn_get_monthly_et0 <- function(aoi_sf_var, save_dir_var, type = "mean") {
     filename = file.path(out_file_paths, out_filenames), 
     overwrite = TRUE
   )
+
+  # CSV table listing the file paths
+  et0_path_tbl <-
+    data.table(
+      month = 1:12,
+      path = file.path(out_file_paths, out_filenames)
+    )
+  
+  write.csv(
+    et0_path_tbl, 
+    file.path(save_dir_var, "et0_path_tbl.csv"),
+    row.names = FALSE,
+    na = "NaN" 
+  )
+
 }
 
 
@@ -521,6 +558,20 @@ fn_get_monthly_ppt <- function(aoi_sf_var, save_dir_var, type = "mean"){
     ppt_m_aoi, 
     filename = file.path(out_file_paths, out_filenames), 
     overwrite = TRUE
+  )
+
+  # CSV table listing the file paths
+  ppt_path_tbl <-
+    data.table(
+      month = 1:12,
+      path = file.path(out_file_paths, out_filenames)
+    )
+  
+  write.csv(
+    ppt_path_tbl, 
+    file.path(save_dir_var, "Precipitation_path_tbl.csv"),
+    row.names = FALSE,
+    na = "NaN" 
   )
 
   #/*--------------------------------*/
@@ -709,27 +760,35 @@ fn_get_rain_events_tbl <- function(aoi_sf_var, save_dir_var, by_climate_zone = T
 # rain_event_tbl_sample <- fread()
 
 
-get_beta_twi <- function(region_abbr_var, aoi_sf_var, save_dir_var){
+fn_get_beta_i <- function(region_abbr_var, aoi_sf_var){
+  # x = 1; aoi_sf_var <- case_dt_r$hybas[[x]]
+  # x = 3; aoi_sf_var <- fail_cases[x,]
+  # region_abbr_var <- aoi_sf_var$continent
+
+  # plot(st_geometry(aoi_sf_var))
   
   # /*===== Load Data =====*/
   dem_aoi <- 
       rast(file.path(raw_dir, "DEM", paste0("hyd_", region_abbr_var, "_dem_15s.tif"))) %>%
       crop(
-        ., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE)))
-        # mask = TRUE
+        ., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE))),
+        mask = TRUE
       ) %>%
       project(., paste0("epsg:", espg_code), method = "bilinear") %>%
       app(., mod_na_cells)
-
+  
+  # plot(dem_aoi)
+  
   flow_acc <-
     rast(file.path(raw_dir, "FlowAccumulation", paste0("hyd_", region_abbr_var, "_acc_15s.tif"))) %>%
     crop(
-        ., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE)))
-        # mask = TRUE
+        ., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE))),
+        mask = TRUE
       ) %>%
     project(., paste0("epsg:", espg_code), method = "bilinear") %>%
     app(., mod_na_cells)
 
+  # plot(flow_acc)
   # /*===== Slope Calculation =====*/
   slope_rad <- terrain(dem_aoi, v = "slope", unit = "radians")
     
@@ -742,32 +801,65 @@ get_beta_twi <- function(region_abbr_var, aoi_sf_var, save_dir_var){
 
   # Add small epsilon to avoid division by zero
   epsilon <- 1e-6
-  twi <- log((A + epsilon) / (tan(slope_rad) + epsilon))
+
+  twi_try <- try(
+    twi <- log((A + epsilon) / (tan(slope_rad) + epsilon)),
+    silent = TRUE
+  )
+
+  if(inherits(twi_try, "try-error")){
+    return(NA)
+  }
+  
   # Normalize TWI to [0, 1]
   twi_norm <- 
     (twi - global(twi, "min", na.rm = TRUE)[[1]]) / (global(twi, "max", na.rm = TRUE)[[1]] - global(twi, "min", na.rm = TRUE)[[1]])
 
   # plot(twi_norm)
-  mean_beta_i <- global(twi_norm, "mean", na.rm = TRUE)[[1]]
+  mean_beta_i <- 
+    global(twi_norm, "mean", na.rm = TRUE)[[1]] %>%
+    round(., 2)
 
   return(mean_beta_i)
 }
 
+# Test 
+# fn_get_beta_i(region_abbr_var = "af", aoi_sf_var = case_dt_r$hybas[[1]])
 
-fn_get_gamma <- function(aoi_sf_var, save_dir_var){
+
+
+fn_get_gamma <- function(region_abbr_var, aoi_sf_var){
+  # x = 1
+  # aoi_sf_var <- case_dt_r$hybas[[x]]
+  # region_abbr_var <- aoi_sf_var$continent
+
 
   # === Load soil hydrologic group data === #
-  path_soil_group <- file.path(save_dir_var, "soil_group.tif")
+  path_soil_group <- file.path(int_dir, "SWY_inputs", region_abbr_var, aoi_sf_var$HYBAS_ID, "soil_group.tif")
 
   if(!file.exists(path_soil_group)){
-    fn_get_soil_group_aoi(
-      aoi_sf_var = aoi_sf_var,
-      save_dir_var = save_dir_var
-    )
+    soil_aoi <- 
+      fn_get_soil_group_aoi(
+        aoi_sf_var = aoi_sf_var,
+        save_dir_var = save_dir_var,
+        results = "return"
+      ) %>%
+      crop(
+        ., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE))),
+        mask = TRUE 
+      )
+    # Note that if results = "return", save_dir_var is not used.
   }
 
-  soil_aoi <- rast(path_soil_group)
+  soil_aoi <- 
+    rast(path_soil_group) %>%
+    crop(
+      ., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE))),
+      mask = TRUE 
+    )
 
+  # plot(soil_aoi)
+  
   # Count area of each soil group
   tab <- freq(soil_aoi, digits = 0)
   # Compute area fractions
@@ -781,6 +873,27 @@ fn_get_gamma <- function(aoi_sf_var, save_dir_var){
 
   # Merge lookup and compute weighted average
   tab <- merge(tab, gamma_lookup, by = "value")
-  gamma_weighted <- sum(tab$gamma * tab$area_fraction)
+  gamma_weighted <- round(sum(tab$gamma * tab$area_fraction), 2)
+}
+
+
+fn_run_swy <- function(which_aoi, which_region, save_dir_p, tfc = 1000, beta_i = 1, gamma = 1) {
+  # which_aoi = case_hybas_tbl[1,]
+  # which_region = which_aoi$continent
+  # save_dir_p = final_swy_dir
+  # 
+
+  # /*===== create a working directory =====*/
+  save_dir <-
+    fn_gen_save_dir(
+      where = save_dir_p,
+      new_relative_dir_path = file.path(which_region, which_aoi$HYBAS_ID),
+      return_path = TRUE
+    )
+
+  # /*===== Run SWY model =====*/
+
+
+
 }
 

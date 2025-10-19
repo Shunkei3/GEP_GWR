@@ -52,10 +52,10 @@ library(progressr)
 handlers("txtprogressbar")
 handlers(global = TRUE)
 
-
-# /*===== Run =====*/
 ls_regions <- unique(hybas_tbl$region_abbr)
 
+
+# /*===== Run =====*/
 for (r in ls_regions){
   # r = "af"
   message(paste0("Processing region: ", r))
@@ -72,37 +72,37 @@ for (r in ls_regions){
   xs <- 1:nrow(case_dt_r)
 
   with_progress({
-      p <- progressor(along = xs)
+    p <- progressor(along = xs)
 
-  case_dt_r <- 
-    case_dt_r %>%
-    mutate(
-      success = future_lapply(xs,
-      # success = lapply(xs,
-          \(x){
-            # x = 1
-            p()
-          
-            # --- Run the function and capture errors --- #
-            catch_error <- try(
-              fn_comp_prep_inputs(
-                which_region = r, 
-                which_aoi = case_dt_r$hybas[[x]]
-                ),
-              silent = TRUE
-            )
+    case_dt_r <- 
+      case_dt_r %>%
+      mutate(
+        success = future_lapply(xs,
+        # success = lapply(xs,
+            \(x){
+              # x = 1
+              p()
+            
+              # --- Run the function and capture errors --- #
+              catch_error <- try(
+                fn_comp_prep_inputs(
+                  which_region = r, 
+                  which_aoi = case_dt_r$hybas[[x]]
+                  ),
+                silent = TRUE
+              )
 
-            # --- Return value --- #
-            # If the function runs successfully, return TRUE, otherwise FALSE
-            if(inherits(catch_error, "try-error")){
-              return(FALSE)
-            } else {
-              return(TRUE)
-            }
-          },
-          future.seed = NULL
-        )
-    )
+              # --- Return value --- #
+              # If the function runs successfully, return TRUE, otherwise FALSE
+              if(inherits(catch_error, "try-error")){
+                return(FALSE)
+              } else {
+                return(TRUE)
+              }
+            },
+            future.seed = NULL
+          )
+      )
   })
 
   case_dt_r <- 
@@ -139,7 +139,6 @@ input_status_dt <-
 
 
 input_status_dt[, .(n_success = sum(success), n_total = .N), by = region][order(region)]
- 
 ```
 
 
