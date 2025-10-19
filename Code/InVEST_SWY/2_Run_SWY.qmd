@@ -1,0 +1,238 @@
+---
+title: "Run InVEST SWY Model"
+---
+
+# Setups
+```{r}
+library(here)
+i_am("Scr/Code/InVEST_SWY/2_Run_SWY.qmd")
+
+# /*===== Base path configurations =====*/
+source(here("Scr/Code/0_path_config.R"))
+
+# /*---- Create output directories ----*/
+final_swy_dir <- 
+  fn_gen_save_dir(
+    where = final_dir,
+    new_relative_dir_path = "SWY",
+    return_path = TRUE
+  )
+
+# /*===== Load R packages =====*/
+library(data.table)
+library(dplyr)
+library(terra)
+library(sf)
+
+# /*===== Load SWY_Runner Python Script =====*/
+library(reticulate)
+# Inspect what R is using:
+# py_config()
+source_python(here("Scr/Code/InVEST_SWY/x_SWY_Runner.py"))
+```
+
+# Prerequisites
++ You should check the status of input data and select a watershed to run SWY model. Some watersheds are too small and do not have all the required input data.
+
+```{r}
+# /*===== Parameter Table =====*/
+param_tbl <- readRDS(file.path(int_dir, "SWY_inputs/0_param_tbl.rds"))
+
+# /*===== Load Watersheds =====*/
+case_hybas_tbl <- 
+  readRDS(file.path(int_dir, "case_hybas_tbl.rds")) %>%
+  tidyr::unnest(cols = "tg_hybas_sf") %>%
+  data.table()
+
+# /*===== Merge Watersheds and Parameter table =====*/
+case_tbl <- 
+  merge(
+    case_hybas_tbl, param_tbl, 
+    by.x = c("region_abbr", "HYBAS_ID"), 
+    by.y = c("region", "hybas_id"), all = TRUE) %>%
+  # chose only those with all parameters available
+  .[param_available == TRUE, ] %>%
+  .[, .(region = region_abbr , hybas_id = HYBAS_ID, t_fac = t_fac_q50, beta_i, gamma)]
+```
+
+# Run SWY Model
+
+
+```{r}
+# /*===== Parallel =====*/
+library(future.apply)
+plan(multicore, workers = 15)
+
+library(progressr)
+handlers("txtprogressbar")
+# handlers(global = TRUE)
+
+# /*===== Run =====*/
+ls_regions <- unique(case_tbl$region)
+
+for (r in ls_regions){
+  # r = "af"
+  message(paste0("Processing region: ", r))
+
+  # Subset case table by region
+  case_tbl_r <- case_tbl[region == r,]
+  
+  # Input Directory
+  input_dir_r <- file.path(int_dir, "SWY_inputs", r)
+  # Save Directory
+  save_dir_r <- file.path(final_swy_dir, r)
+
+  xs <- 1:nrow(case_tbl_r)
+
+  with_progress({
+    p <- progressor(along = xs)
+    
+    case_tbl_r <- 
+      case_tbl_r[,
+        success := future_lapply(xs,
+        # success :=  lapply(xs,
+          \(x){
+            # x = 1
+            p()
+
+            tmp_id <- case_tbl_r$hybas_id[x]
+
+            catch_error <- try(
+              run_swy(
+                workspace_dir = file.path(save_dir_r, tmp_id),
+                inputs_dir = file.path(input_dir_r, tmp_id),
+                threshold_flow_accumulation = case_tbl_r$t_fac[[x]],
+                beta_i = case_tbl_r$beta_i[[x]],
+                gamma = case_tbl_r$gamma[[x]],
+                quiet = TRUE
+              ),
+              silent = TRUE
+            )
+
+            # --- Return value --- #
+            if(inherits(catch_error, "try-error")){
+              return(FALSE)
+            } else {
+              return(TRUE)
+            }
+          },
+          future.seed = NULL
+        )
+    ]
+  })
+
+  saveRDS(
+    case_tbl_r, 
+    file.path(final_swy_dir, paste0("x_output_status_", r, ".rds"))
+  )
+}
+```
+
+
+---
+
+# Test Run
+
+
+```{r}
+tmp_id = 1060000790
+tmp_region = "af"
+final_dir_swy_out <- "/Volumes/baseHD/NatCapTEEMs/GEP/GWR/Data/Final/SWY"
+where_to_save <- file.path(final_dir_swy_out, tmp_region, tmp_id)
+which_inputs_dir <- file.path("/Volumes/baseHD/NatCapTEEMs/GEP/GWR/Data/Intermediate/SWY_inputs", tmp_region, tmp_id)
+
+dir.exists(which_inputs_dir)
+
+run_swy(
+    workspace_dir = where_to_save,
+    inputs_dir = which_inputs_dir,
+    threshold_flow_accumulation = 37,
+    beta_i = 0.28,
+    gamma = 0.84
+)
+```
+
+
+
+```{r}
+i = 1
+test_aoi <- case_hybas_tbl[i, ]
+print(paste0("Testing HYBAS_ID: ", test_aoi$HYBAS_ID))
+
+(tfc <- test_aoi$t_fac_q50)
+(beta_i <- test_aoi$beta_i)
+(gamma <- test_aoi$gamma)
+
+final_swy_dir <- '/Volumes/baseHD/NatCapTEEMs/GEP/GWR/Data/Final/SWY'
+int_dir <- '/Volumes/baseHD/NatCapTEEMs/GEP/GWR/Data/Intermediate/SWY_inputs'
+
+tmp_id <- "1060000150"
+tmp_id <- "1060000160"
+
+
+r <- "af"
+tmp_wdir <- file.path(final_swy_dir, r, tmp_id)
+
+temp_aoi <- st_read(file.path(int_dir, r, tmp_id, "aoi.gpkg"))
+
+tmp_p <- rast(file.path(tmp_wdir, "P.tif"))
+# plot(tmp_p)
+
+tmp_qf <- rast(file.path(tmp_wdir, "Qf.tif"))
+tmp_aet <- rast(file.path(tmp_wdir, "intermediate_outputs/aet.tif"))
+tmp_l_avail <- 
+  rast(file.path(tmp_wdir, "L_avail.tif")) %>%
+  crop(., temp_aoi, mask = TRUE)
+
+plot(tmp_l_avail)
+
+tmp_l_derived <- 
+  tmp_p - tmp_qf - tmp_aet %>%
+  crop(., temp_aoi, mask = TRUE)
+
+plot(tmp_l_derived)
+
+
+```
+
+
+
+## L layer
+```{r}
+library(data.table)
+library(terra)
+library(sf)
+
+tmp_dir <- "/Volumes/baseHD/NatCapTEEMs/GEP/GWR/Data/z_InVest_SampleData/x_output"
+
+# === New === #
+p_test <- rast(file.path(tmp_dir, "SWY/P_test.tif"))
+qf_test <- rast(file.path(tmp_dir, "SWY/Qf_test.tif"))
+aet_test <- rast(file.path(tmp_dir, "SWY/intermediate_outputs/aet_test.tif"))
+
+l_test_derived <- p_test - qf_test - aet_test
+
+writeRaster(
+  l_test_derived,
+  file.path(tmp_dir, "SWY/0_L_test_derived.tif"),
+  overwrite = TRUE
+)
+
+# === Old === #
+l_old <- rast(file.path(tmp_dir, "SWY_old/L_old.tif"))
+
+
+p_old <- rast(file.path(tmp_dir, "SWY_old/P_old.tif"))
+qf_old <- rast(file.path(tmp_dir, "SWY_old/Qf_old.tif"))
+aet_old <- rast(file.path(tmp_dir, "SWY_old/intermediate_outputs/aet_old.tif"))
+
+l_old_derived <- p_old - qf_old - aet_old
+
+writeRaster(
+  l_old_derived,
+  file.path(tmp_dir, "SWY_old/0_L_old_derived.tif"),
+  overwrite = TRUE
+)
+
+
+```
