@@ -1,0 +1,91 @@
+# Goal:
++ Replicate the sample run with my data and identify which data inputs are problematic.
+
+# Sample Data:
++ a small sub-watershed called **Gura**, city of  Nairobi, Kenya
+
++ **Workspace:** /Users/shunkeikakimoto/Dropbox/ResearchProject/GEP/GWR/Data/x_sample_output
+
++ **Land Use/Land Cover:** /Users/shunkeikakimoto/Dropbox/ResearchProject/GEP/GWR/Data/x_sample_data/land_use_gura.tif
++ **Biophysical Table:** /Users/shunkeikakimoto/Dropbox/ResearchProject/GEP/GWR/Data/x_sample_data/biophysical_table_gura_SWY.csv
+
++ **Digital Elevation Model:**: /Users/shunkeikakimoto/Dropbox/ResearchProject/GEP/GWR/Data/x_sample_data/DEM_gura.tif
++ **Area Of Interest:** /Users/shunkeikakimoto/Dropbox/ResearchProject/GEP/GWR/Data/x_sample_data/watershed_gura.shp
+  + `.gpkg` format works as well.
+  + 
+
++ **Flow Direction Algorithm**: D8
++ **Threshold Flow Accumulation**: 1000
++ **beta_i Parameter:** Default value is 1
++ **gamma Parameter:** Default value is 1
+
++ **ET0 Directory:** /Users/shunkeikakimoto/Dropbox/ResearchProject/GEP/GWR/Data/x_sample_data/ET0_monthly
++ **Precipitation Directory:** /Users/shunkeikakimoto/Dropbox/ResearchProject/GEP/GWR/Data/x_sample_data/Precipitation_monthly
++ **Soil Hydrologic Group:** /Users/shunkeikakimoto/Dropbox/ResearchProject/GEP/GWR/Data/x_sample_data/soil_group_gura.tif
+
++ **alpha_m Parameter:** 1/12
+
++ **Rain events table:**: /Users/shunkeikakimoto/Dropbox/ResearchProject/GEP/GWR/Data/x_sample_data/rain_events_gura.csv
+
+
+# Data Inputs
++ **Spatial Data Inputs:**
+  + aoi
+  - [] LULC
+  - [-] DEM
+  - [] Weather
+    + ET0_monthly directory
+    + Precipitation_monthly directory
+  - [-] Soil Hydrologic Group
+
++ **Tabular Data Inputs:**
+  - [] Biophysical table
+    + This depends on Kc (Crop Evapotranspiration Coefficient) and CN(Curve Number) values in your LULC data.
+    + This should be modified based on your LULC data. 
+  - [] Rain events table
+    + This depends on your Precipitation data.
+
+
+
+# TO DO:
+
+# Summary:
++ Use 6933 for all spatial data inputs.
++ Make sure the missing values in your spatial inputs are coded as NA, not NaN. To do so, it is always better to apply the function `mod_na_cells` (`app(., mod_na_cells)`) after reprojection with `project()`.
++ For integer rasters (LULC, Soil Hydrologic Group), use `method = "near"` in `project()`. For continuous rasters (DEM, ET0, Precipitation), use `method = "bilinear"` in `project()`.
+
+# NOTE:
++ I think you should not crop and mask. Just crop, then do some manipulations. Before saving, you can mask if necessary. Especially this is the case, if you work with multiple rasters with different resolutions and extents.
+
+
+
+## Task 1: CRS Problem (completed)
++ Which crs should I use? You can continue using 6933. But make sure all your spatial data inputs are in the same crs. Also, make sure the missing values in your LULC raster are coded as NA, not NaN.
+  - [-] aoi
+  - [-] lulc:
+    + **Make sure the missing values are coded as NA, not NaN.**
+  + [-] dem
+  + [-] ET0_monthly directory
+  + [-] Precipitation_monthly directory
+  + [-] Soil Hydrologic Group 
+
+## Task 2: Can I use my own data for the sample run?
+
+**step1: Can I use my DEM data ?**
++ Yes, replacing with my DEM data worked fine, while keeping all other data the same as the sample run.
++ Also, you don't need to use the same resolutions of DEM as the LULC.
+
+**step 2: Can I use my Soil Hydrologic Group data?**
++ Yes, it works fine while keeping all other data the same as the sample run except for DEM.
+
+**Step 3: Can I use my precipitation and ET data?**
++ Yes, using my data for DEM, ET0 Directory, Precipitation Directory, Soil Hydrologic Group worked fine while keeping LULC and Biophysical table the same as the sample run.
++ **NOTE:** I didn't test for rain events table, but I think it should work fine as well.
+
+**Step 4: Can I use my LULC and Biophysical table?**
++ Note that when you change the source of LULC, you also need to change the Biophysical table accordingly.
++ Looks okay.
+
+
+
+

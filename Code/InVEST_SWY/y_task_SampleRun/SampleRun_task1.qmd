@@ -1,0 +1,256 @@
+# Task 2: Can I use my own data for the sample run?
+
++ List of data inputs in which sources I want to replace with my own data
+  + lulc
+  + dem
+  + ET0_monthly directory
+  + Precipitation_monthly directory
+  + Soil Hydrologic Group 
+
+```{r}
+library(here)
+library(data.table)
+library(dplyr)
+library(terra)
+library(exactextractr)
+library(sf)
+library(tmap)
+library(ggplot2)
+library(tidyr)
+
+# EPSG:8857
+# WGS 84 / Equal Earth Greenwich
+
+# ref_crs <- 8857
+ref_crs <- 6933
+
+#/*--------------------------------*/
+#' ## Path Setting
+#'/*--------------------------------*/
+tmp_save_dir <- here("Data/x_sample_data/1_task2")
+
+# === Load Watersheds === #
+case_hybas_tbl <- readRDS(here("Data/Intermediate/case_hybas_tbl.rds"))
+
+af_case <- 
+  filter(case_hybas_tbl, region_abbr == "af") %>%
+  unnest(cols = "tg_hybas_sf") %>%
+  data.table()
+
+af_case_sf <- st_as_sf(af_case)
+
+# Test watershed in North America
+tmp_region <- "na"
+tmp_case_hybas_sf <- 
+  filter(case_hybas_tbl, region_abbr == tmp_region) %>%
+  .[["tg_hybas_sf"]] %>%
+  .[[1]]
+
+tmp_hybas_i <- tmp_case_hybas_sf[1,]
+tmp_hybas_j <- tmp_case_hybas_sf[2,]
+
+```
+
+## AOI
++ original: WGS 84 / UTM zone 37S
+
+```{r}
+#| label: aoi
+# === Original === # 
+aoi_orig <- st_read(here("Data/x_sample_data/watershed_gura.shp"))
+
+# aoi_orig_adj <- st_transform(aoi_orig, crs = st_crs(af_case_sf))
+
+# === Test === #
+# aoi_tg <- af_case_sf[aoi_orig_adj,]
+# plot(aoi_tg$geometry)
+# plot(aoi_orig_adj$geometry, add=TRUE, col="red")
+
+st_write(
+  st_transform(aoi_orig, crs = ref_crs),
+  aoi_orig,
+  here(tmp_save_dir, "aoi_guara_test.gpkg"),
+  delete_dsn = TRUE,
+  quiet = TRUE
+)
+
+test <- st_read(here(tmp_save_dir, "aoi_guara_test.gpkg"))
+
+```
+
+```{r}
+#| label: define-functions
+
+mod_na_cells <- function(x) {
+    x[is.nan(x)] <- NA  # make sure NaN -> NA
+  as.integer(round(x))  # enforce integer codes
+}
+
+```
+
+## Land Use/Land Cover
++  WGS 84 / UTM zone 37S (EPSG:32737)
+
+```{r}
+#| label: lulc
+
+# === Original === #
+lulc_orig <- rast(here("Data/x_sample_data/land_use_gura.tif"))
+
+unique(values(lulc_orig))
+plot(lulc_orig)
+
+
+# === Test === #
+lulc_test <- project(lulc_orig, paste0("epsg:", ref_crs), method = "near")
+unique(values(lulc_test))
+
+lulc_test_int <- app(lulc_test, mod_na_cells)
+
+writeRaster(
+  lulc_test_int,
+  here(tmp_save_dir, "lulc_gura_test.tif"),
+  overwrite = TRUE,
+  datatype  = "INT1U",  # fits 0..255
+  NAflag    = 255
+)
+
+lulc_test_int <- rast(here(tmp_save_dir, "lulc_gura_test.tif"))
+plot(lulc_test)
+
+unique(values(lulc_test_int))
+
+#/*--------------------------------*/
+#' ## Check
+#/*--------------------------------*/
+# identical category sets ignoring missing?
+setequal(
+  na.omit(unique(values(lulc_orig))),
+  na.omit(unique(values(lulc_test)))
+)
+# should be TRUE, and yes it is.
+
+# verify no spurious non-integers crept in
+any(values(lulc_test) %% 1 != 0, na.rm = TRUE)
+# should be FALSE when using method="near", and yes it is.
+```
+
+## DEM
++ Should be the same crs as LULC: WGS 84 / UTM zone 37S (EPSG:32737)
++ Should be the same resolution as LULC: 15 m
+
+```{r}
+#| label: dem
+
+# === Original === #
+dem_orig <- rast(here("Data/x_sample_data/DEM_gura.tif"))
+
+# crs(dem_orig) == crs(lulc_orig)
+# res(dem_orig) == res(lulc_orig)
+
+# === Test === #
+dem_test <- project(dem_orig, paste0("epsg:", ref_crs), method = "near")
+
+writeRaster(
+  dem_test,
+  here(tmp_save_dir, "dem_gura_test.tif"),
+  overwrite = TRUE
+)
+
+dem_test <- rast(here(tmp_save_dir, "dem_gura_test.tif"))
+unique(values(dem_test))
+```
+
+
+## ET0 Directory
+```{r}
+#| label: et0_dir
+
+# === Original === #
+ls_files_et0_orig <- 
+  list.files(
+    here("Data/x_sample_data/ET0_monthly"), 
+    full.names = TRUE
+  )
+
+et0_1_orig <- rast(ls_files_et0_orig[[1]])
+
+# === Test === #
+ls_et0_test <- 
+  lapply(
+    ls_files_et0_orig,
+    \(x) {
+      # x = ls_files_et0_orig[[1]]
+      et0_tmp <- rast(x)
+
+      et0_tmp_proj <- project(et0_tmp, paste0("epsg:", ref_crs), method = "near")
+
+      writeRaster(
+        et0_tmp_proj,
+        here(
+          tmp_save_dir, "ET0_monthly_test",
+          paste0("et0_", tools::file_path_sans_ext(basename(x)), ".tif")
+        ),
+        overwrite = TRUE
+      )
+    }
+  )
+```
+
+
+## Precipitation Directory
+```{r}
+#| label: precip_dir
+# === Original === #
+ls_files_precip_orig <- 
+  list.files(
+    here("Data/x_sample_data/Precipitation_monthly"), 
+    full.names = TRUE
+  )
+
+precip_1_orig <- rast(ls_files_precip_orig[[1]])
+
+# === Test === #
+ls_precip_test <- 
+  lapply(
+    ls_files_precip_orig,
+    \(x) {
+      # x = ls_files_precip_orig[[1]]
+      precip_tmp <- rast(x)
+
+      precip_tmp_proj <- project(precip_tmp, paste0("epsg:", ref_crs), method = "near")
+
+      writeRaster(
+        precip_tmp_proj,
+        here(
+          tmp_save_dir, "Precipitation_monthly_test",
+          paste0("precip_", tools::file_path_sans_ext(basename(x)), ".tif")
+        ),
+        overwrite = TRUE
+      )
+    }
+  )
+```
+
+## Soil Hydrologic Group
+```{r}
+#| label: soil_group
+
+# === Original === #
+soil_group_orig <- rast(here("Data/x_sample_data/soil_group_gura.tif"))
+
+# === Test === #
+soil_group_test <- project(soil_group_orig, paste0("epsg:", ref_crs), method = "near")
+
+writeRaster(
+  soil_group_test,
+  here(tmp_save_dir, "soil_group_gura_test.tif"),
+  overwrite = TRUE
+)
+
+soil_group_test <- rast(here(tmp_save_dir, "soil_group_gura_test.tif"))
+```
+
+
+
+
