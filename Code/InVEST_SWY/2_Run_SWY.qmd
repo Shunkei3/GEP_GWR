@@ -7,22 +7,22 @@ title: "Run InVEST SWY Model"
 library(here)
 i_am("Scr/Code/InVEST_SWY/2_Run_SWY.qmd")
 
+# /*===== Load R packages =====*/
+library(data.table)
+library(dplyr)
+library(terra)
+library(sf)
+
 # /*===== Base path configurations =====*/
 source(here("Scr/Code/0_path_config.R"))
 
-# /*---- Create output directories ----*/
+# /*---- Path to the output directory ----*/
 final_swy_dir <- 
   fn_gen_save_dir(
     where = final_dir,
     new_relative_dir_path = "SWY",
     return_path = TRUE
   )
-
-# /*===== Load R packages =====*/
-library(data.table)
-library(dplyr)
-library(terra)
-library(sf)
 
 # /*===== Load SWY_Runner Python Script =====*/
 library(reticulate)
@@ -44,6 +44,8 @@ case_hybas_tbl <-
   tidyr::unnest(cols = "tg_hybas_sf") %>%
   data.table()
 
+# case_hybas_sf <- st_as_sf(case_hybas_tbl)
+
 # /*===== Merge Watersheds and Parameter table =====*/
 case_tbl <- 
   merge(
@@ -59,7 +61,7 @@ case_tbl <-
 
 
 ```{r}
-# /*===== Parallel =====*/
+# /*===== Parallel Setup =====*/
 library(future.apply)
 plan(multicore, workers = 15)
 
@@ -127,6 +129,23 @@ for (r in ls_regions){
   )
 }
 ```
+
+# Status Check
+
+```{r}
+swy_status_tbl <- 
+  list.files(
+    final_swy_dir, 
+    pattern = "^x_output_status_.*\\.rds$", 
+    full.names = TRUE
+  ) %>%
+  lapply(readRDS) %>%
+  rbindlist() %>%
+  .[, success := as.logical(success)]
+
+swy_status_tbl[, .(n_success = sum(success), n_total = .N), by = region][order(region)]
+```
+
 
 
 ---
