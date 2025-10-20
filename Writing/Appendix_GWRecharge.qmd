@@ -56,27 +56,45 @@ I will conduct the analysis on a watershed scale. The watershed is a common scal
 
 Due to the lack of data on actual measurement of natural groundwater recharge rate globally, I will use the InVEST Seasonal Water Yield (SWY) model to estimate the amount of groundwater recharge provided from natural ecosystems. I use one of the key outputs of the SWY model called local recharge, which is the amount of net rainfall that infiltrates into soil beyond the root zone. 
 
-The valuation of groundwater recharge regulating service is done in the following ways: First, I estimate natural groundwater recharge rate per year for each watershed $i$, $\Delta Q_i$ ($inches$) which is derived from the InVEST SWY model. Next, I derive the unit cost of pumping groundwater from the aquifer to the surface as a function of the depth of the water table. The total cost of pumping groundwater consists of three components [@Naggar2003]; (i) capital cost of the pumping system, (ii) operation and maintenance cost, and (iii) energy cost which is a function of the depth of the water table. Since I will derive the value of groundwater recharge service as a difference in pumping costs with and without groundwater recharge, the capital cost and operation and maintenance cost of the pumping system, which is assumed to be constant regardless of the depth of the water table, will cancel out in the difference. Thus, all the information I need to proceed the analysis is the marginal cost of pumping water as a function of the depth of the water table. To this end, I will rely on the engineering formula to approximate it [@Naggar2003]. The energy cost of pumping a unit volume of water is given by the following formula:
+The valuation of groundwater recharge regulating service is done in the following ways: First, I estimate natural groundwater recharge rate per year for each watershed $i$, $\Delta R_i$ ($mm$) which is derived from the InVEST SWY model. Next, I derive the unit cost of pumping groundwater from the aquifer to the surface as a function of the depth of the water table. The total cost of pumping groundwater consists of three components [@Naggar2003]; (i) capital cost of the pumping system, (ii) operation and maintenance cost, and (iii) energy cost which is a function of the depth of the water table. Since I will derive the value of groundwater recharge service as a difference in pumping costs with and without groundwater recharge, the capital cost and operation and maintenance cost of the pumping system, which is assumed to be constant regardless of the depth of the water table, will cancel out in the difference. Thus, all the information I need to proceed the analysis is the marginal cost of pumping water as a function of the depth of the water table. To this end, I will rely on the engineering formula to approximate it [@Naggar2003]. The energy cost of pumping a unit volume of water (in $USD/m^3$) is given by the following equation:
 
 $$
-c(H) = \frac{\gamma e_r}{\eta \cdot 3.6 \times 10^6} \cdot H
+c(H; e_r) = A \cdot H \quad \text{where } A = \frac{\gamma e_r}{\eta} \frac{1}{3.6 \times 10^6} 
 $$
-, where $c$ is the cost of pumping water (in $USD/m^3$) which is a function of the lift height $H$ (in $m$), given that the specific weight of water $\gamma$ (approximately $9800 N/m^3$), the pumping efficiency $\eta$ (dimensionless, typically between 0.6 and 0.9), and the energy price $e_r$ (in $USD/kWh$). The factor $3.6 \times 10^6$ is used to convert energy from joules to kilowatt-hours ($1 \, kWh = 3.6 \times 10^6 \, joules$), as electricity prices are typically expressed in units of kilowatt-hours (USD/kWh). The energy cost of pumping water is a linear function of the lift height $H$.
 
-Then the total energy cost required to pump $Q \, m^3$ of water is given by:
+, where $H$ is the total head (in $m$), $\gamma$ is the specific weight of water (approximately $9810 N/m^3$)^[$\gamma = \rho g$, where $\rho$ is the density of water ($1000 kg/m^3$) and $g$ is the acceleration due to gravity ($9.81 m/s^2$). So , $\gamma = 1000 kg/m^3 \times 9.8 m/s^2 = 9810 N/m^3$], $\eta$ is the pumping efficiency (a value between 0 and 1), and $e_r$ is the energy price (in $USD/kWh$). The pumping efficiency means how much of the energy is actually consumed for lifting water. Although it is likely that pumping efficiency varies by region depending on the type of pumping system used, there is no global information on regional values of pumping efficiency. Here, I assume a uniform pumping efficiency of $\eta = 0.5$ based on FAO's reference value for pumping efficiency of motor driven pumps [@Phocaides2007]. The factor $3.6 \times 10^6$ is used to convert energy from joules to kilowatt-hours ($1 \, kWh = 3.6 \times 10^6 \, joules$), as electricity prices are typically expressed in units of kilowatt-hours (USD/kWh). Given a price of electricity price $e_r$ in $USD/kWh$, the energy cost of pumping water is described as a linear function of the total head $H$. 
+
+Then the total cost required to pump $Q \, m^3$ of water is given by:
 
 $$
-C_e(H) = c(H) \cdot Q
+TC(H; e_r) = c(H; e_r) \cdot Q
 $$
 
 <!-- Second, I estimate the marginal cost of pumping water from the aquifer to the surface (e.g., the cost of electricity) as a function of the depth of the water table. For example, the relationship between the depth of the water table and the marginal pumping cost can be illustrated as @fig-cost-fn [@Acharya.Barbier2000]. In the figure, the x-axis represents the depth of the water table (add scale), and the y-axis represents the marginal cost of pumping water from the aquifer to the surface (add scale). The pumping cost increases after a certain depth ($R_0$). For example, the total cost of pumping $1 m^3$ of water from the aquifer to the surface when the depth to the water table is $R_1$ is calculated as the area under the curve from $0$ to $R_1$. I rely on the  -->
 
-Finally, based on the estimated groundwater recharge rate $\Delta Q_i$ and the marginal cost function, I will estimate the GEP of groundwater recharge. Suppose that $R_0$ is the status quo water table depth in the presence of groundwater recharge. I will assume $R_0$ is the average depth of the water table in the watershed $i$ in the last x years (e.g., 10 years). Let $R_1$ be the water table depth in the absence of groundwater recharge. $R_1$ is obtained by subtracting the estimated groundwater recharge rate $\Delta Q_i$ from $R_0$ (i.e., $R_1 = R_0 - \Delta Q_i$). Then the value of groundwater recharge service in the watershed $i$ is estimated as the pumping cost saved due to the groundwater recharge service, which is given by the difference in pumping costs with and without groundwater recharge:  
+Let $H_0$ be the total head when recharging does not occur, and $H_1$ be the total head when recharging occurs. Total head is the sum of the vertical distance from pump to static water level (i.e., depth to static water table, $R$) and the additional head loss due to friction in the pipes (i.e., drawdown and friction loss, $F$). Thus, $H = R + F$.
+Assuming that the friction loss $F$ is constant regardless of the pumping, the difference in total costs to pump $Q \, m^3$ of water in the presence and absence of groundwater recharge is given by:
+$$
+\begin{aligned}
+TC(H_0; e_r) - TC(H_1; e_r) 
+  &= [c(R_0 + F; e_r) \cdot Q - c(R_1 + F; e_r)] Q \\
+  &= A [(R_0 + F) - (R_1 + F)] Q \\
+  &= A (R_0 - R_1) Q \\
+  &= A \Delta R Q \\
+\end{aligned}
+$$
+
+, where $\Delta R = R_0 - R_1$ is the change in the depth of the water table due to groundwater recharge. With the estimated groundwater recharge rate $\Delta R$ from the InVEST SWY model, I estimate the value of groundwater recharge service proxied by the savings in pumping costs due to groundwater recharge.
+
+
+
+<!-- Finally, based on the estimated groundwater recharge rate $\Delta Q_i$ and the marginal cost function, I will estimate the GEP of groundwater recharge. Suppose that $R_0$ is the status quo water table depth in the presence of groundwater recharge. I will assume $R_0$ is the average depth of the water table in the watershed $i$ in the last x years (e.g., 10 years). Let $R_1$ be the water table depth in the absence of groundwater recharge. $R_1$ is obtained by subtracting the estimated groundwater recharge rate $\Delta Q_i$ from $R_0$ (i.e., $R_1 = R_0 - \Delta Q_i$). Then the value of groundwater recharge service in the watershed $i$ is estimated as the pumping cost saved due to the groundwater recharge service, which is given by the difference in pumping costs with and without groundwater recharge:  
 
 $$
-V = (C_e(R_0) - C_e(R_1)) \cdot Q^{\ast}
+V = (TC(R_0) - TC(R_1)) \cdot Q^{\ast}
 $$
-, where $Q^{\ast} \, m^3$ of water is pumped from the aquifer in watershed $i$ in that year.
+, where $Q^{\ast} \, m^3$ of water is pumped from the aquifer in watershed $i$ in that year. 
+-->
 
 # Data
 
