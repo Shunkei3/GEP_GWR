@@ -20,6 +20,8 @@
 
 + **Precipitation and Evapotranspiration data**:
   + [AgERA5 historic and near real time forcing data (version 2.0) from Copernicus Climate Change Service (C3S) Climate Data Store (CDS)](https://cds.climate.copernicus.eu/datasets/sis-agrometeorological-indicators?tab=overview)
+  + Precipitation (mm/day)
+  + Reference Evapotranspiration (mm/day)
   + 0.1 degree resolution
     + Copernicus Climate Change Service (2020): Agrometeorological indicators from 1979 to present derived from reanalysis. Copernicus Climate Change Service (C3S) Climate Data Store (CDS). DOI: 10.24381/cds.6c68c9bb (Accessed on DD-MMM-YYYY)
 
@@ -51,6 +53,7 @@
   + Global Geo-processed Data of Aquifer Properties by 0.5° Grid, Country and Water Basins (https://data.msdlive.org/records/9sany-rht26)
   + This dataset is used to identify the watersheds that overlap with major groundwater basins.
 
+
 + **A global layer of streams**:
   + [HydroRIVERS v1 from HydroSHEDS](https://www.hydrosheds.org/products/hydrorivers)
     + Lehner, B., Grill G. (2013). Global river hydrography and network routing: baseline data and new approaches to study the world’s large river systems. Hydrological Processes, 27(15): 2171–2186. https://doi.org/10.1002/hyp.9740
@@ -80,6 +83,13 @@
 | **Campos et al. (2010s)**  | Grapes, peaches     | $K_c = 1.41 \cdot NDVI - 0.17$      |
 | **Duchemin et al. (2006)** | Wheat (Morocco)     | $K_c = 1.33 \cdot NDVI - 0.08$      |
 | **Glenn et al. (2011)**    | Global summary      | $K_c \approx 1.2 \cdot NDVI + 0.05$ |
+
++ **Depth to Groundwater Table**
+  + @Jasechko.etal2024: "Rapid groundwater decline and some cases of recovery in aquifers globally"
+
++ Country-level Fresh Groundwater Withdrawals
+  + FAO AQUASTAT: Fresh groundwater withdrawals by country (in 10^9(billion) m3/year)
+    + https://data.apps.fao.org/aquastat/?lang=en&share=f-8cef6473-9fb9-47f0-adf2-26caa3f38d81
 
 
 
