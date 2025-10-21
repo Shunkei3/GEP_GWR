@@ -1,0 +1,180 @@
+---
+title: "Generate Inputs for InVEST SWY Model"
+---
+
+# Error:
+
+TypeError: boolean value of NA is ambiguous
+
++ This is solved by removing rows with NA in lucode in the biophysical table
+
+
+# Setup
+```{r}
+library(here)
+i_am("Scr/Code/InVEST_SWY/1_Gen_SWY_Inputs.qmd")
+
+# /*===== Load Functions =====*/
+# Always load the updated version of the code
+path_source_Rfunc <- here("Scr/Code/InVEST_SWY/x_SWY_Functions.R")
+if(file.exists(path_source_Rfunc)){
+  file.remove(path_source_Rfunc)
+}
+# Create R script from qmd
+quarto::qmd_to_r_script(qmd = here("Scr/Code/InVEST_SWY/x_SWY_Functions.qmd"))
+# Load functions
+source(path_source_Rfunc)
+```
+
+
+# Prerequisites
+
+```{r}
+# /*===== Watersheds =====*/
+hybas_tbl <- 
+  readRDS(file.path(int_dir, "case_hybas_tbl.rds")) %>%
+  tidyr::unnest(cols = "tg_hybas_sf") %>%
+  st_as_sf()
+
+# format(object.size(hybas_tbl_r), units = "auto")
+```
+
+# Run
++ Generate input data for each watershed
++ Loop over regions
+
+```{r}
+# /*===== Setup for parallel computation =====*/
+library(future.apply)
+plan(multicore, workers = 15)
+
+library(progressr)
+handlers("txtprogressbar")
+handlers(global = TRUE)
+
+ls_regions <- unique(hybas_tbl$region_abbr)
+
+
+# /*===== Run =====*/
+for (r in ls_regions){
+  # r = "af"
+  message(paste0("Processing region: ", r))
+
+  hybas_tbl_r <- hybas_tbl[hybas_tbl$region_abbr == r,]
+
+  case_dt_r <- 
+    tibble(
+      region = r,
+      hybas_id = hybas_tbl_r$HYBAS_ID,
+      hybas = split(hybas_tbl_r, seq(nrow(hybas_tbl_r)))
+    )
+
+  xs <- 1:nrow(case_dt_r)
+
+  with_progress({
+    p <- progressor(along = xs)
+
+    case_dt_r <- 
+      case_dt_r %>%
+      mutate(
+        success = future_lapply(xs,
+        # success = lapply(xs,
+            \(x){
+              # x = 1
+              p()
+            
+              # --- Run the function and capture errors --- #
+              catch_error <- try(
+                fn_comp_prep_inputs(
+                  which_region = r, 
+                  which_aoi = case_dt_r$hybas[[x]]
+                  ),
+                silent = TRUE
+              )
+
+              # --- Return value --- #
+              # If the function runs successfully, return TRUE, otherwise FALSE
+              if(inherits(catch_error, "try-error")){
+                return(FALSE)
+              } else {
+                return(TRUE)
+              }
+            },
+            future.seed = NULL
+          )
+      )
+  })
+
+  case_dt_r <- 
+    select(case_dt_r, -hybas) %>%
+    tidyr::unnest(cols = c("success")) %>%
+    data.table()
+
+  saveRDS(
+    case_dt_r, 
+    file.path(int_dir, "SWY_inputs", paste0("x_input_status_", r, ".rds"))
+  )
+
+  gc()
+}
+
+# test_status <- readRDS(file.path(int_dir, "SWY_inputs", paste0("x_input_status_", r, ".rds")))
+```
+
+
+# Status Check
+```{r}
+case_hybas_tbl <- 
+  readRDS(file.path(int_dir, "case_hybas_tbl.rds"))
+
+
+input_status_dt <- 
+  list.files(
+    file.path(int_dir, "SWY_inputs"), 
+    pattern = "x_input_status_.*\\.rds$", 
+    full.names = TRUE
+  ) %>%
+  lapply(readRDS) %>%
+  rbindlist()
+
+
+input_status_dt[, .(n_success = sum(success), n_total = .N), by = region][order(region)]
+```
+
+
+
+
+
+
+
+---
+
+# Test Run
+```{r}
+#| eval: FALSE
+tmp_region <- "na"
+tmp_region_hybas_sf <- 
+  filter(case_hybas_tbl, region_abbr == tmp_region) %>%
+  .[["tg_hybas_sf"]] %>%
+  .[[1]]
+
+i = 1
+tmp_aoi_i <- tmp_region_hybas_sf[i,]
+
+tmp_save_dir <- fn_comp_prep_inputs(aoi_sf_var = tmp_aoi_i, save_dir_return = TRUE)
+
+```
+
+
+```{r}
+#| eval: FALSE
+
+tmp_lulc <- rast(file.path(tmp_save_dir, "lulc.tif"))
+tmp_dem <- rast(file.path(tmp_save_dir, "dem.tif"))
+tmp_et0 <- rast(list.files(file.path(tmp_save_dir, "ET0_monthly"), full.names = TRUE))
+tmp_precip <- rast(list.files(file.path(tmp_save_dir, "Precipitation_monthly"), full.names = TRUE))
+tmp_soil <- rast(file.path(tmp_save_dir, "soil_group.tif"))
+
+plot(tmp_dem)
+
+```

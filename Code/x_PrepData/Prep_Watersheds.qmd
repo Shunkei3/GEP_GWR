@@ -1,0 +1,80 @@
+---
+title: "Prepare Watershed Data for Analysis"
+---
+
+# Setup
+```{r}
+library(here)
+i_am("Scr/Code/x_PrepData/Prep_Watersheds.qmd")
+
+# /*===== Load Packages =====*/
+library(data.table)
+library(dplyr)
+library(terra)
+library(sf)
+library(tmap)
+library(ggplot2)
+
+
+# /*===== Path Configuration =====*/
+source(here("Scr/Code/0_path_config.R"))
+```
+
+
+# Data Preparation
+
+```{r}
+# /*===== Load Country Boundaries =====*/
+ctry_bd <- 
+  st_read(
+    file.path(raw_dir, "z_ee_r250_correspondence.gpkg"),
+    quiet = TRUE
+  )
+
+# /*===== Major GW Basins =====*/
+gw_basins_sf <- 
+    st_read(file.path(raw_dir, "h2wjr-te507/shapefiles/All_merged.shp")) %>%
+    filter(WHYClass == 10)
+
+# /*===== Groundwater Use Data (10^9 m3/year) =====*/
+gw_use_dt <- 
+  fread(file.path(raw_dir, "GroundwaterUseData/AQUASTAT Dissemination System.csv")) %>%
+  .[Year == 2020, .(country = Area, gw_wdw_bil = Value)] %>%
+  .[, iso3_r250_label := countrycode(country, "country.name", "iso3c")] %>%
+  .[, gw_wdw := gw_wdw_bil * 1e9]
+
+
+
+# /*===== Global Map of Irrigation Areas: GMIA v5 =====*/
+#' + Groundwater-dependent regions
+#' References: 
+#' + THe Global Map of Irrigation Areas - version 5.0 - area irrigated with groundwater expressed as percentage of totla ara equipped for irrigation [@Siebert.etal2013a]
+#' AQUASTAT - FAO's Global Information System on Water and Agriculture: https://www.fao.org/aquastat/en/geospatial-information/global-maps-irrigated-areas/latest-version/
+#' 
+#' + The percentage of the area equipped for irrigation that was actually used for irrigation and the percentages of the area equipped for irrigation that was irrigated with groundwater
+#'
+#' + a resolution of 5 minutes of arc (approximately 10 km at the equator)
+
+gmia <- rast(file.path(raw_dir, "GMIA/gmia_v5_aeigw_pct_aei.asc"))
+
+# plot(gmia)
+
+gmia_sf <- 
+  st_read(
+    file.path(raw_dir, "GMIA/gmia_v5_shp/gmia_v5_aeigw_pct_aei.shp"),
+    quiet = TRUE
+  ) %>%
+  filter(PCT_AEIGW > 50) # Areas where more than 50% of the area equipped for irrigation is irrigated with groundwater
+
+# ggplot() + 
+#   geom_sf(data = gmia_sf, aes(fill = PCT_AEIGW)) +
+#   scale_fill_viridis_c()
+
+
+# /*=====  =====*/
+```
+
+
+# 
+
+

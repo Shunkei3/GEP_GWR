@@ -19,40 +19,59 @@ execute:
 ```{r}
 #| include: false
 library(here)
-# i_am("Groundwater_recharge/Gitcontrolled/Writing/Appendix_GWRecharge.qmd")
-```                                                             
+i_am("Scr/Writing/Appendix_GWRecharge.qmd")
+```
+
+```{r}
+#| include: false
+#| echo: false
+#| message: false
+#| warning: false
+
+# === Prepare Results === #
+knitr::knit_child(
+  here("Scr/Writing/Appendix_GWRecharge.qmd")
+  "x_aaea_PrepResults.qmd",
+  quiet = TRUE
+)
+```
+
+
+<!-- storage -->
+<!-- Another study by @Barnes.etal1999 evaluate the value of ecosystem services provided by wetlands in the Zambezi River basin system (The largest portion of the basin lies in Zambia). They used the replacement cost approach to estimate the value of groundwater recharge service provided by wetlands for domestic and commercial water supply. Specifically, they estimate what it would cost to provide the same amount of water to users if wetlands no longer recharged the aquifer. Then,  -->
+
+<!-- To quantify the value of groundwater recharge regulating service, I pose the following question: *"If the recharge didn’t happen, what would it cost to deliver the same amount of water to people or systems that currently benefit from it?"*. For example, groundwater table would decrease in the absence of groundwater recharge regulating service. This would lead to the following two consequences to people [@Acharya.Barbier2000]: (i) increased pumping costs to extract groundwater as the groundwater table declines below a certain level, (ii) the need for investment in alternative water supply sources or infrastructure adaptation if the groundwater table declines beyond the maximum depth that can be pumped.  -->
+
 
 # Introduction
 <!-- Groundwater accounts for 99% of all liquid freshwater on Earth [@@UNWater2022] -->
-## Definition of Groundwater Recharge Ecosystem Service
+
+<!-- ## Background -->
 Groundwater recharge broadly describes the replenishment of water to a groundwater flow system [@Winter2000]. IT is a part of the hydrological regulation process. There are two mains ways about how groundwater recharge service contributes to human well-being: (i) provision of water resources for human use (drinking, irrigation, and industrial use) and (ii) regulating the levels of groundwater table, which make the access to groundwater resources easier and more reliable.
 
-## Previous literature
+<!-- ## Problem -->
+In the past GEP studies, groundwater recharge service is often treated as a part of broader categories of hydrological services such as water provisioning service or flood regulation service. For example, @Ouyang.etal2020 implicitly accounted for the groundwater recharge as part of water provisioning and flood regulation services. Such a treatment of groundwater recharge service can be found in other studies as well (e.g., @Pacetti.etal2024; @Deng.etal2025; @Joshi.etal2025). Meanwhile, there are some studies some agricultural economics and hydrology studies that focus on valuing groundwater recharge service as a regulating service. @Acharya.Barbier2000 is one of a few studies that explicitly value groundwater recharge service per se. They quantify the value of groundwater recharge as a regulating service focusing on its role in agricultural production in wetlands in northern Nigeria. They link the crop yields from recharge-supported irrigation to ecosystem value of groundwater recharge. Based on hypothetical scenarios of groundwater recharge rates, they estimate the value of groundwater recharge as a welfare change for irrigation-dependent agricultural producers in the region. Another study by @Brauman.etal2015 estimates the value of groundwater recharge regulating service as a pumping cost for water extraction saved owing to natural groundwater recharge associated with different land use types in Kona, Hawaii. They estimate the monetary value of the groundwater recharge service attributed to a specific land cover scenario as the difference in pumping costs for water before and after the land-use change. This study aims to provide a global-scale assessment of the value of groundwater recharge service as a regulating service. Specifically, I focus on the role of groundwater recharge in stabilizing aquifer levels, which has received limited attention in the previous GEP studies. This regulating service of groundwater recharge is important from the perspective of human well-being, as it helps maintain (or slow) the long-term decline of groundwater levels, thereby avoiding increased pumping costs to extract groundwater and circumventing the need for investment in alternative water supply sources or infrastructure adaptation (e.g., drilling deeper wells, more energy-intensive pumping system, or building reservoirs). 
 
-The studies that valuing groundwater recharge service per se is not many. Most of the previous GEP studies do not isolate groundwater recharge service as a distinct service, but they view the service as a part of the broader categories of hydrological services such as water provisioning service. Therefore, the value of groundwater recharge service is implicitly included in the value of these broader categories. For example, @Ouyang.etal2020 implicitly accounted for the groundwater recharge as part of water provisioning and flood regulation services. Such a treatment of groundwater recharge service can be found in other studies as well (e.g., @Deng.etal2025; @Joshi.etal2025; @Pacetti.etal2024). 
+<!-- ## What this study does  -->
+To quantify the value of groundwater recharge regulating service, I pose the following question: *"If the recharge didn’t happen, what would it cost to deliver the same amount of water to people or systems that currently benefit from it?"*. This framing aligns with the idea of the replacement cost approach. The saving in pumping costs associated with the groundwater recharge service has been used as a measure of the value of groundwater recharge in the literature (e.g., @Acharya.Barbier2000, @Brauman.etal2015). This allows for estimating the gross ecosystem product (GEP) of recharge based on the costs that would be incurred to replicate its function artificially or offset the consequences of its absence.
 
-As a studies that explicitly value groundwater recharge service per se, @Acharya.Barbier2000 studies quantify the value of groundwater recharge as a regulating service in the context of agricultural production in wetlands in northern Nigeria. They link the crop yields from recharge-supported irrigation to ecosystem value of groundwater recharge. Based on hypothetical scenarios of groundwater recharge rates, they estimate the value of groundwater recharge as a welfare change for irrigation-dependent agricultural producers in the region. Another study by @Brauman.etal2015 estimates the value of groundwater recharge regulating service as a pumping cost for water extraction saved owing to natural groundwater recharge associated with different land use types in Kona, Hawaii. They estimate the monetary value of the groundwater recharge service attributed to a specific land cover scenario as the difference in pumping costs for water before and after the land-use change. 
+<!-- ## Method -->
 
-<!-- Another study by @Barnes.etal1999 evaluate the value of ecosystem services provided by wetlands in the Zambezi River basin system (The largest portion of the basin lies in Zambia). They used the replacement cost approach to estimate the value of groundwater recharge service provided by wetlands for domestic and commercial water supply. Specifically, they estimate what it would cost to provide the same amount of water to users if wetlands no longer recharged the aquifer. Then,  -->
+# Methods: Analytical Framework
 
-## Research Question
-The previous GEP literature does not provide a standalone estimate for groundwater recharge service, rather the value of the service is accounted primarily as a provisioning service, focusing on its contribution to current water supply. Meanwhile, there are some agricultural economics and hydrology studies that focus on valuing groundwater recharge service as a regulating service. 
-
-To fill this gap, I estimate the value of groundwater recharge service as a regulating service, focusing on its role in stabilizing aquifer levels. From the perspective of human well-being, this regulating service is important because it helps maintain (or slow) the long-term decline of groundwater levels, thereby avoiding increased pumping costs to extract groundwater and the need for investment in alternative water supply sources or infrastructure adaptation (e.g., drilling deeper wells, more energy-intensive pumping system, or building reservoirs). To quantify this service, I pose the following question: *"If the recharge didn’t happen, what would it cost to deliver the same amount of water to people or systems that currently benefit from it?"*.
-
-For example, groundwater table would decrease in the absence of groundwater recharge regulating service. This would lead to the following two consequences to people [@Acharya.Barbier2000]: (i) increased pumping costs to extract groundwater as the groundwater table declines below a certain level, (ii) the need for investment in alternative water supply sources or infrastructure adaptation if the groundwater table declines beyond the maximum depth that can be pumped. 
-
-This framing aligns with the idea of the replacement cost approach. The saving in pumping costs associated with the groundwater recharge service has been used as a measure of the value of groundwater recharge in the literature (e.g., @Acharya.Barbier2000, @Brauman.etal2015). This allows for estimating the gross ecosystem product (GEP) of recharge based on the costs that would be incurred to replicate its function artificially or offset the consequences of its absence.
+<!-- Overview -->
+I will conduct the analysis on a watershed scale. The watershed is a common scale for hydrological analysis because it is a natural hydrological unit that collects precipitation and drains it into a common outlet, such as a river or lake. Not all those watersheds in the world are relevant for the current analysis, as only those that intersect regions with significant groundwater dependence, where groundwater serves as a essential source of water for human use, are pertinent for evaluating the value of groundwater recharge service. To identify such watersheds, I use two datasets: 
 
 
-# Methods
 
-I will conduct the analysis on a watershed scale. The watershed is a common scale for hydrological analysis because it is a natural hydrological unit that collects precipitation and drains it into a common outlet, such as a river or lake. The first step of my analysis is to prepare which watersheds to analyze. To this end, I use two datasets: one is the major groundwater basin boundary dataset obtained from @Niazi.etal2024, and the other is the watershed boundary data from HydroBASINS v1 (Level 6) [@Lehner.Grill2013]. Specifically, I identified the watersheds that overlap with major groundwater basins. In total, 7,722 watersheds are selected for the analysis. 
+To this end, I use two datasets: one is the major groundwater basin boundary dataset obtained from @Niazi.etal2024, and the other is the watershed boundary data from HydroBASINS v1 (Level 6) [@Lehner.Grill2013]. Specifically, I identified the watersheds that overlap with major groundwater basins. In total, 7,722 watersheds are selected for the analysis. 
 
 **insert a figure here**
 
-<!-- 106 major watersheds of the world. The watershed is a convenient scale for this analysis because it is a natural hydrological unit that collects precipitation and drains it into a common outlet, such as a river or lake.  -->
-<!-- ![106 major watersheds of the world - [Source: UN ATLAS OF THE OCEANS](https://www.oceansatlas.org/subtopic/en/c/593/)](z_images/world_watersheds.gif){#fig-watershed} -->
+Then, for each watershed, I estimate the amount of natural groundwater recharge provided from natural ecosystems using the InVEST Seasonal Water Yield (SWY) model.
+
+
+
 
 Due to the lack of data on actual measurement of natural groundwater recharge rate globally, I will use the InVEST Seasonal Water Yield (SWY) model to estimate the amount of groundwater recharge provided from natural ecosystems. I use one of the key outputs of the SWY model called local recharge, which is the amount of net rainfall that infiltrates into soil beyond the root zone. 
 
@@ -70,7 +89,7 @@ $$
 TC(H; e_r) = c(H; e_r) \cdot Q
 $$
 
-<!-- Second, I estimate the marginal cost of pumping water from the aquifer to the surface (e.g., the cost of electricity) as a function of the depth of the water table. For example, the relationship between the depth of the water table and the marginal pumping cost can be illustrated as @fig-cost-fn [@Acharya.Barbier2000]. In the figure, the x-axis represents the depth of the water table (add scale), and the y-axis represents the marginal cost of pumping water from the aquifer to the surface (add scale). The pumping cost increases after a certain depth ($R_0$). For example, the total cost of pumping $1 m^3$ of water from the aquifer to the surface when the depth to the water table is $R_1$ is calculated as the area under the curve from $0$ to $R_1$. I rely on the  -->
+
 
 Let $H_0$ be the total head when recharging does not occur, and $H_1$ be the total head when recharging occurs. Total head is the sum of the vertical distance from pump to static water level (i.e., depth to static water table, $R$) and the additional head loss due to friction in the pipes (i.e., drawdown and friction loss, $F$). Thus, $H = R + F$.
 Assuming that the friction loss $F$ is constant regardless of the pumping, the difference in total costs to pump $Q \, m^3$ of water in the presence and absence of groundwater recharge is given by:
@@ -87,19 +106,9 @@ $$
 , where $\Delta R = R_0 - R_1$ is the change in the depth of the water table due to groundwater recharge. With the estimated groundwater recharge rate $\Delta R$ from the InVEST SWY model, I estimate the value of groundwater recharge service proxied by the savings in pumping costs due to groundwater recharge.
 
 
-
-<!-- Finally, based on the estimated groundwater recharge rate $\Delta Q_i$ and the marginal cost function, I will estimate the GEP of groundwater recharge. Suppose that $R_0$ is the status quo water table depth in the presence of groundwater recharge. I will assume $R_0$ is the average depth of the water table in the watershed $i$ in the last x years (e.g., 10 years). Let $R_1$ be the water table depth in the absence of groundwater recharge. $R_1$ is obtained by subtracting the estimated groundwater recharge rate $\Delta Q_i$ from $R_0$ (i.e., $R_1 = R_0 - \Delta Q_i$). Then the value of groundwater recharge service in the watershed $i$ is estimated as the pumping cost saved due to the groundwater recharge service, which is given by the difference in pumping costs with and without groundwater recharge:  
-
-$$
-V = (TC(R_0) - TC(R_1)) \cdot Q^{\ast}
-$$
-, where $Q^{\ast} \, m^3$ of water is pumped from the aquifer in watershed $i$ in that year. 
--->
-
 # Data
 
 The InVEST SWY model requires the following data inputs: (i) Monthly precipitation (raster data), (ii) Monthly reference evapotranspiration (raster data), (iii) Digital elevation model (raster data), (iv) Land use/land cove (raster data), (v) Soil hydrologic group, and (vi) Biophysical table (.csv file). All of these data are publicly available. The data sources are summarized in Table X. The data on energy price is obtained from @IEA2019.
-
 
 ## Estimate Groundwater Recharge Rate with InVEST SWY Model
 

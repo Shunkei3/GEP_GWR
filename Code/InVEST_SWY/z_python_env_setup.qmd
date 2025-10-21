@@ -1,5 +1,0 @@
-
-```{zsh}
-conda create -n env_gep_gwr python=3.12.9 -c conda-forge -y
-```
-

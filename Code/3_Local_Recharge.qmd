@@ -1,0 +1,270 @@
+---
+title: "Generate Local Recharge Layer (L.tif) from InVEST SWY Outputs"
+---
+
+# Objective
++ Since InVEST 3.17.0, the SWY model does not produce the local recharge layer (L.tif) as an output.
++ But, it can be derived from other outputs. Specifically, L = P - Qf - AET (see InVEST SWY documentation).
++ This script generates L.tif for each watershed from the InVEST SWY outputs.
++ Then, the generated L.tif files for all watersheds within each continet into a single raster file.
+  + This requires aligning all L.tif files to a common grid (based on the DEM).
++ Finally, the continent-level L rasters will be merged to create a single global L raster.
+
+
+# Setup
+```{r}
+library(here)
+i_am("Scr/Code/InVEST_SWY/3_local_recharge.qmd")
+
+# /*===== Load R packages =====*/
+library(data.table)
+library(dplyr)
+library(terra)
+library(sf)
+
+library(foreach)
+
+library(ggplot2)
+library(tidyterra)
+
+# /*===== Base path configurations =====*/
+source(here("Scr/Code/0_path_config.R"))
+
+# /*---- Path to the SWY output directory ----*/
+final_swy_dir <- file.path(final_dir, "SWY")
+```
+
+# Prerequisites
+
+
+```{r}
+# === List of  Watersheds === #
+hybas_tbl <- 
+  readRDS(file.path(int_dir, "case_hybas_tbl.rds")) %>%
+  tidyr::unnest(cols = "tg_hybas_sf") %>%
+  data.table() %>%
+  .[,.(region = region_abbr, hybas_id = HYBAS_ID, geometry)]
+
+swy_status_tbl <- 
+  list.files(
+    final_swy_dir, 
+    pattern = "^x_output_status_.*\\.rds$", 
+    full.names = TRUE
+  ) %>%
+  lapply(readRDS) %>%
+  rbindlist() %>%
+  .[, success := as.logical(success)] %>%
+  .[success == TRUE, ] %>% # select only successful runs
+  .[, .(region, hybas_id)]
+```
+
+
+# Get Local Recharge Layer
++ L = P - Qf - AET
++ For each watershed, L_man.tif will be saved in the corresponding SWY output folder.
+
+```{r}
+# /*===== Parallel Setup =====*/
+library(future.apply)
+plan(multicore, workers = 15)
+
+library(progressr)
+handlers("txtprogressbar")
+
+
+# /*===== Run =====*/
+ls_regions <- unique(swy_status_tbl$region)
+
+for (r in ls_regions){
+  # r = "na"
+  message(paste0("Processing region: ", r))
+
+  hybas_sf_r <- 
+    merge(
+      swy_status_tbl[region == r, ], # valid watersheds
+      hybas_tbl[region == r,], # with geometry
+      by = c("region", "hybas_id"), all.x = TRUE
+    ) %>%
+    st_as_sf()
+  
+  case_dt_r <- 
+    tibble(
+      region = r,
+      hybas_id = hybas_sf_r$hybas_id,
+      hybas = split(hybas_sf_r, seq(nrow(hybas_sf_r)))
+    )
+    
+  xs <- 1:nrow(case_dt_r)
+
+  with_progress({
+    p <- progressor(along = xs)
+
+    case_dt_r <- 
+      case_dt_r %>%
+      mutate(
+        success := future_lapply(xs,
+          \(x){
+            # x = 1
+            p()
+
+            # SWY output directory for the watershed
+            swy_out_dir_x <- file.path(final_swy_dir, r, case_dt_r$hybas_id[x])
+
+            # Load required rasters
+            p <- rast(file.path(swy_out_dir_x, "P.tif"))
+            qf <- rast(file.path(swy_out_dir_x, "Qf.tif"))
+            aet <- rast(file.path(swy_out_dir_x, "intermediate_outputs/aet.tif"))
+
+            # Calculate Local Recharge
+            catch_error <- try({
+                l <- crop(p - qf - aet, case_dt_r$hybas[[x]], mask = TRUE)},
+                silent = TRUE
+              )
+            
+            if (inherits(catch_error, "try-error")){
+              return(FALSE)
+            } else {
+              # Save Local Recharge raster
+              writeRaster(
+                l, 
+                filename = file.path(swy_out_dir_x, "L_man.tif"),
+                overwrite = TRUE
+              )
+              return(TRUE)
+            }
+          },
+          future.seed = NULL
+        )
+      )
+  })
+
+  saveRDS(
+    case_dt_r, 
+    file.path(final_swy_dir, paste0("x_local_recharge_status_", r, ".rds"))
+  )
+
+  gc()
+}
+
+
+```
+
+
+# Check Status
+
+```{r}
+# /*===== Check Local Recharge Generation Status =====*/
+l_status_tbl <- 
+  list.files(
+    final_swy_dir, 
+    pattern = "^x_local_recharge_status_.*\\.rds$",
+    full.names = TRUE
+  ) %>%
+  lapply(readRDS) %>%
+  rbindlist() %>%
+  .[, `:=`(
+    success = as.logical(success),
+    hybas = NULL
+  )]
+
+l_status_tbl[, .(n_success = sum(success), n_total = .N), by = region][order(region)]
+```
+
+
+# Compile L Layers for All Watersheds
+
+```{r}
+# /*===== Parallel Setup =====*/
+# library(future.apply)
+# plan(multicore, workers = 15)
+
+library(progressr)
+handlers("txtprogressbar")
+# handlers(global = TRUE)
+
+# /*===== Save Directory Creation =====*/
+l_aligned_dir <- fn_gen_save_dir(final_dir,"l_aligned", return_path = TRUE)
+
+# /*===== Run =====*/
+ls_regions <- unique(l_status_tbl$region)
+
+for(r in ls_regions){
+  # r = "af"
+  message(paste0("Compiling L layers for region: ", r))
+
+  ls_l_tifs_r <- 
+    list.files(
+      file.path(final_swy_dir, r),
+      pattern = "L_man\\.tif$",
+      recursive = TRUE,
+      full.names = TRUE
+    )
+  
+  templ_dem <- rast(file.path(raw_dir, "DEM", paste0("hyd_", r, "_dem_15s.tif")))
+
+  out_dir <- fn_gen_save_dir(l_aligned_dir, r, return_path = TRUE)
+
+  xs <- 1:length(ls_l_tifs_r)
+
+  with_progress({
+    p <- progressor(along = xs)
+
+    ls_l_aligned <- 
+      # future_lapply(xs, 
+      lapply(xs, 
+        \(x){
+          # x = 1
+          p()
+
+          l_file = ls_l_tifs_r[x]
+          
+          project(
+            rast(l_file), 
+            templ_dem,
+            method = "bilinear",
+            filename = file.path(out_dir, paste0("l_aligned_", basename(dirname(l_file)), ".tif")),
+            overwrite = TRUE,
+            align_only = TRUE
+          )
+
+          return(NULL)
+        }
+        # future.seed = NULL
+      )
+  })
+
+  l_aligned_files <- list.files(out_dir, full.names = TRUE)
+
+  final <-
+    mosaic(
+        sprc(l_aligned_files),
+        fun = "max",
+        filename = file.path(l_aligned_dir, paste0("l_aligned_", r, ".tif")),
+        overwrite = TRUE
+    )
+    
+  # plot(rast(file.path(l_aligned_dir, paste0("l_aligned_", r, ".tif"))))
+    
+  # final <- mosaic(sprc(list(templ_dem, test_dem)), fun="max", filename="final.tif", overwrite=TRUE)
+}
+
+
+
+# plot(rast(file.path(l_aligned_dir, paste0("l_aligned_", "eu", ".tif"))))
+
+
+l_aligned_files <- 
+  list.files(
+    l_aligned_dir,
+    pattern = "^l_aligned_.*\\.tif$",
+    full.names = TRUE
+  )
+
+final_global_l <- 
+  mosaic(
+      sprc(l_aligned_files),
+      fun = "max",
+      filename = file.path(l_aligned_dir, "l_aligned_global.tif"),
+      overwrite = TRUE
+  )
+```

@@ -1,0 +1,328 @@
+---
+title: "Create a Flow Accumulation Table"
+---
+
++ InVEST SWY description of Threshold Flow Accumulation:
+  + Threshold Flow Accumulation (number, units: number of pixels, required): The number of upslope pixels that must flow into a pixel before it is classified as a stream.
+
+
+# Data:
++ **Observed stream network: HydroRIVERS v10**
+  + https://www.hydrosheds.org/products/hydrorivers
++ **Flow Accumulation: HydroSHEDS Core layers (v1)**, 15 arc-second, a flow accumulation map derived from the flow direction map, either measured in upstream grid cells (ACC) or as upstream area (ACA)
+  + https://www.hydrosheds.org/products/hydrosheds (HydroSHEDS Core layers (version 1))
+  + https://www.hydrosheds.org/hydrosheds-core-downloads (HydroSHEDS Core Data Downloads)
+
+
+# Load Packages
+```{r}
+library(here)
+library(data.table)
+library(dplyr)
+library(lubridate)
+library(terra)
+library(sf)
+library(ggplot2)
+
+library(foreach)
+```
+
+# Load Setup
+```{r}
+#| include: false
+
+# === Base path configurations === #
+source(here("Scr/Code/0_path_config.R"))
+
+# === Path for saving output === #
+if(!dir.exists(file.path(int_dir, "FlowAcc"))){
+  dir.create(file.path(int_dir, "FlowAcc"), recursive = TRUE)
+}
+```
+
+
+# Load Data
+
+```{r}
+# world_bd <- 
+#   st_read(
+#     file.path(raw_dir, "World_Data_Grids/country.shp"),
+#     quiet = TRUE
+#   ) %>%
+#   setnames(names(.), tolower(names(.)))
+# st_crs(world_bd) <- 4326
+# world_bd <- st_transform(world_bd, crs = "epsg:6933") # WGS 84 / World
+
+# === Load Watersheds === #
+case_hybas_tbl <- readRDS(file.path(int_dir, "case_hybas_tbl.rds"))
+
+case_hybas_tbl_unnest <- 
+  case_hybas_tbl %>%
+  tidyr::unnest(cols = "tg_hybas_sf") %>%
+  data.table() %>%
+  st_as_sf()
+```
+
+
+# Define Functions
+
+To determine the Threshold Flow Accumulation (TFA) parameter required by the InVEST Seasonal Water Yield model, I combined the HydroSHEDS Core Flow Accumulation raster (ACC) and the HydroRIVERS stream network. 
+
+After aligning the two datasets to a common coordinate system and grid resolution, I rasterized the stream polylines to the flow-accumulation grid and identified channel head cells—stream pixels with exactly one neighboring stream cell. 
+
+I then extracted the flow-accumulation value at each channel head, representing the upstream contributing area where mapped channels begin to form. The median of these headwater flow-accumulation values (expressed in number of pixels) was used as the watershed’s TFA, with lower quantiles tested as sensitivity checks to account for potential under-representation of small headwater channels in HydroRIVERS. This threshold defines the number of upslope cells required for a pixel to initiate a stream in the InVEST model and ensures consistency between the modeled and observed drainage networks.
+
++ In rasterized stream networks, channel heads are simply stream pixels that have only one neighboring stream pixel (the start of a tributary line).
+
+
++ The results might return NA values because:
+  + No rivers in the AOI
+  + The AOI is too small to crop the flow accumulation raster (e.g., smaller than 3x3 pixels)
+
+```{r}
+# /*===========================================*/
+#'=  Define Functions =
+# /*===========================================*/
+get_flow_acc_vals <- function(aoi, stream_raw, flow_acc_raw){
+  # aoi = filter(case_hybas_tbl_unnest, id == "na_7060000010")
+  # aoi = filter(case_hybas_tbl_unnest, id == "af_1061451560") #problematic one
+  # stream_raw = river_raw
+  # flow_acc_raw = flow_acc_raw
+
+  # === Subset streams for the AOI === #
+  st_agr(stream_raw) <- "constant"
+  st_agr(aoi) <- "constant"
+  stream <- try(
+    st_intersection(stream_raw, aoi),
+    silent = TRUE
+  )
+  
+  # Check
+  # ggplot() +
+  #   geom_sf(data = aoi) +
+  #   geom_sf(data = stream, fill = "blue")
+
+  # === Crop flow_acc_raw for the AOI === #
+  flow_acc <- crop(flow_acc_raw, vect(aoi))
+
+  # If crop is small, `focal` with large window size (e.g., 3x3) may fail. Use padding.
+  if (nrow(flow_acc) < 2 || ncol(flow_acc) < 2) {
+    # pad by 1 cell so 3x3 kernel is valid
+    flow_acc <- extend(flow_acc, 1)
+  }
+
+  # plot(flow_acc)
+
+  if(inherits(stream, "try-error")){
+    head_flow_acc <- NA
+  } else {
+    if(nrow(stream) == 0){
+    # If no rivers in the AOI, return NA values
+    head_flow_acc <- NA    
+    } else {
+      # Rasterize the streams
+      r_stream <- rasterize(stream, flow_acc, field = 1, background = 0)
+      # plot(r_stream)
+
+      # Identify headwater pixels: exactly one stream neighbor in 8-neighborhood. This choice is consistent with the D8 flow direction algorithm.
+      w8 <- matrix(1, 3, 3)
+      w8[2,2] <- 0
+      nbrs  <- focal(r_stream, w = w8, fun = sum, na.policy = "omit", na.rm = TRUE)
+      heads <- (r_stream == 1) & (nbrs == 1)
+
+      # plot(heads)
+
+      # Sample flow accumulation values at headwater pixels
+      head_cells <- which(values(heads) == 1)
+      head_flow_acc <- values(flow_acc)[head_cells]
+      head_flow_acc <- head_flow_acc[is.finite(head_flow_acc) & head_flow_acc > 0]
+    }
+  }
+
+  # === Pick threshold (pixels, median) === #
+  res_tbl <- 
+    data.table(
+      id = unique(aoi$id),
+      continent = aoi$continent,
+      any_rivers = !all(is.na(head_flow_acc)),
+      t_fac_q05 = as.integer(quantile(head_flow_acc, 0.05, na.rm = TRUE)),
+      t_fac_q25 = as.integer(quantile(head_flow_acc, 0.25, na.rm = TRUE)),
+      t_fac_q50 = as.integer(quantile(head_flow_acc, 0.50, na.rm = TRUE)),
+      t_fac_q75 = as.integer(quantile(head_flow_acc, 0.75, na.rm = TRUE)),
+      t_fac_q95 = as.integer(quantile(head_flow_acc, 0.90, na.rm = TRUE))
+    )
+  return(res_tbl)
+}
+
+# test
+# test <- get_flow_acc_vals(
+#   aoi = filter(case_hybas_tbl_unnest, id == "af_1061451560"),
+#   stream_raw = river_raw,
+#   flow_acc_raw = flow_acc_raw
+# )
+
+# get_flow_acc_values <- function(aoi, river_raw, flow_acc_raw){
+#   # aoi = filter(case_hybas_tbl_unnest, id == "na_7060000010")
+#   # aoi = filter(case_hybas_tbl_unnest, id == "au_5060077570")
+#   # aoi = filter(case_hybas_tbl_expand, id == "au_5060081550") #fail
+
+#   # plot(st_geometry(aoi))
+  
+#   # === Subset streams for the AOI === #
+#   river_aoi <- try(
+#     st_intersection(
+#       river_raw, 
+#       aoi
+#     ) %>%
+#     st_buffer(., dist = 100),
+#     silent = TRUE
+#   )
+
+#   # ggplot() +
+#   #   geom_sf(data = aoi) +
+#   #   geom_sf(data = river_aoi, fill = "blue")
+  
+#   # === Extract Flow Accumulation values for the AOI === #
+#   if(inherits(river_aoi, "try-error")){
+#     res_values <- NA    
+#   } else {
+#     if(nrow(river_aoi) == 0){
+#     # If no rivers in the AOI, return NA values
+#     res_values <- NA    
+#     } else {
+#       # Extract values
+#       flow_acc_values <- 
+#         exactextractr::exact_extract(
+#           flow_acc_raw, 
+#           river_aoi,
+#           progress = FALSE
+#         ) %>% 
+#         rbindlist(idcol = "id") %>%
+#         .[, .(value = sum(coverage_fraction * value, na.rm = TRUE) / sum(coverage_fraction, na.rm = TRUE)), by = id]
+
+#       res_values <- flow_acc_values$value
+#     }
+#   }
+
+#   res_tbl <- 
+#       data.table(
+#         id = unique(aoi$id),
+#         continent = aoi$continent,
+#         any_rivers = !all(is.na(res_values)),
+#         fa_q05 = quantile(res_values, 0.05, na.rm = TRUE)[[1]],
+#         fa_q10 = quantile(res_values, 0.10, na.rm = TRUE)[[1]],
+#         fa_q25 = quantile(res_values, 0.25, na.rm = TRUE)[[1]],
+#         fa_q50 = quantile(res_values, 0.50, na.rm = TRUE)[[1]]
+#       )
+#   return(res_tbl)
+# }
+```
+
+
+# Run for Each Continent
++ error: Progress interrupted by simpleError condition: [focal] nrow(w) > 2 * nrow(x)
+  + af_1061451560 is problematic
+```{r}
+#/*--------------------------------*/
+#' ## Preparation
+#/*--------------------------------*/
+library(future.apply)
+plan(multicore, workers = 15)
+library(progressr)
+handlers("txtprogressbar")
+handlers(global = TRUE)
+
+ls_region <- unique(case_hybas_tbl$region_abbr)
+
+#/*--------------------------------*/
+#' ## Loop over Regions
+#/*--------------------------------*/
+flow_acc_tbl <- 
+  foreach(r = ls_region, .combine = rbind) %do% {
+    # r = "af"
+    message(paste0("Processing region: ", r))
+    
+    # /*===== Preparation =====*/
+    # --- 1. Watershed data for region r --- #
+    case_hybas_r <- 
+      filter(case_hybas_tbl, region_abbr == r) %>%
+      .[["tg_hybas_sf"]] %>%
+      .[[1]]
+    
+    # --- 2. Stream data for region r --- #
+    river_raw <- 
+      st_read(
+        file.path(raw_dir, "Rivers", paste0("HydroRIVERS_v10_", r, "_shp"), paste0("HydroRIVERS_v10_", r, ".shp")),
+        quiet = TRUE
+      ) %>%
+      st_transform(crs = st_crs(case_hybas_r))
+
+    # --- 3. Flow Accumulation data for region r --- #
+    flow_acc_raw <- 
+      rast(file.path(raw_dir, "FlowAccumulation", paste0("hyd_", r, "_acc_15s.tif")))　%>%
+      project(., "epsg:6933") #  WGS 84 / NSIDC EASE-Grid 2.0 Global
+    
+    # plot(flow_acc_raw)
+
+    # === Create Flow Accumulation Table for region r === #
+    xs <- 1:nrow(case_hybas_r)
+
+    # af_1061398880 is problematic (solved by padding)
+    # ls_id <- case_hybas_r$id
+    # locate the target id in ls_id
+    # which(ls_id == "af_1061398880")
+    # xs <- 168:200
+    
+    with_progress({
+      p <- progressor(along = xs)
+
+      flow_acc_tbl <- 
+        # lapply(
+        future_lapply(
+          xs,
+          \(x) {
+            message(paste0("Processing region: ", r, ", watershed ID: ", case_hybas_r$id[x]))
+            p()
+            
+            get_flow_acc_vals(
+              aoi = case_hybas_r[x, ],
+              stream_raw = river_raw,
+              flow_acc_raw = flow_acc_raw
+            )
+          },
+          future.seed = NULL
+        ) %>%
+        rbindlist()
+    })
+
+    saveRDS(
+      flow_acc_tbl,
+      file.path(int_dir, "FlowAcc", paste0("flow_acc_tbl_", r, ".rds"))
+    )
+
+    return(flow_acc_tbl)  
+}
+
+# # === Save === #
+saveRDS(
+  flow_acc_tbl,
+  here(int_dir, "FlowAcc/flow_acc_tbl_global.rds")
+)
+```
+
+# Check Results
+
+```{r}
+#| eval: FALSE
+
+case_hybas_tbl
+
+ls_region
+r = "af"
+flow_acc_tbl_r <- readRDS(file.path(int_dir, "FlowAcc", paste0("flow_acc_tbl_", r, ".rds")))
+
+nrow(flow_acc_tbl_r)
+
+
+
+```
