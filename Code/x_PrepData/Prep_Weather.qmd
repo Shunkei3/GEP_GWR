@@ -1,0 +1,220 @@
+---
+title: "Preprocess Weather Data"
+---
+
+
+```{r}
+library(here)
+i_am("Scr/Code/x_PrepData/Prep_Weather.qmd")
+
+# /*===== Load R packages =====*/
+library(data.table)
+library(dplyr)
+library(terra)
+library(sf)
+library(tmap)
+library(ggplot2)
+
+# /*===== Base path configurations =====*/
+source(here("Scr/Code/0_path_config.R"))
+```
+
+# To Do:
+
++ I need to get the daily precipitation data to calculate monthly rain events (>= 0.1mm) 
++ The daily precipitation data is aggregated to monthly values,
++ Also, Monthly ET0 data is derived based on the same precipitation data. Use the modified Hargreaves method.
++ 
+
+
++ (Currently in use) AgERA5, daily
++ 0.1 degree resolution
++ https://cds.climate.copernicus.eu/datasets/sis-agrometeorological-indicators?tab=overview
++ P (Preciptation_Flux, mm/day): Total precipitation
++ ET0 (mm/day): Penman-Monteith reference evapotranspiration according to the FAO56 approach
+
+
+# Preprocessing Weather Data
+
+## Precipitation Data (AgERA5)
+
+### Daily Data
+```{r}
+# /*===========================================*/
+#'= Daily Precipitation (AgERA5) =
+# /*===========================================*/
+ls_files_p_d_Agromet <- 
+  list.files(
+    file.path(raw_dir, "Weather/Agromet_P_d_2019"),
+    full.names = FALSE
+  )
+
+p_d_Agromet_raw <-
+  lapply(
+    ls_files_p_d_Agromet, 
+    function(x) {
+      # x = ls_files_p_d_Agromet[10]
+      layer <- rast(file.path(raw_dir, "Weather/Agromet_P_d_2019", x))
+
+      # plot(layer)
+      
+     #  Layer names
+      day <- gsub(".*?(\\d{8}).*", "\\1", x)
+      names(layer) <- paste0("d", as.integer(as.Date(day, format = "%Y%m%d") - as.Date(paste0(substr(day, 1, 4), "-01-01")) + 1))
+      
+      return(layer)
+    }
+  ) %>%
+  rast()
+
+writeRaster(
+  p_d_Agromet_raw, 
+  filename = file.path(raw_dir, "Weather/p_d_Argomet_raw_2019.tif"), 
+  overwrite = TRUE
+)
+```
+
+
+## Monthly Average and Total Precipitation
+
+```{r}
+#/*--------------------------------*/
+#' ## Monthly Average and Total Precipitation
+#/*--------------------------------*/
+ls_dates <- gsub(".*?(\\d{8}).*", "\\1", ls_files_p_d_Agromet)
+ls_dates_months <- month(as.Date(ls_dates, format = "%Y%m%d"))
+
+ls_p_m_mean_Agromet_raw <- list(rep(NA, length(unique(ls_dates_months))))
+
+ls_p_m_sum_Agromet_raw <- list(rep(NA, length(unique(ls_dates_months))))
+
+
+for (m in unique(ls_dates_months)) {
+  # m = 1
+
+  message(paste0("Processing month: ", m))
+
+  tg_file_names <- ls_files_p_d_Agromet[ls_dates_months == m]
+
+  layers_d_m <- rast(file.path(raw_dir, "Weather/Agromet_P_d_2019", tg_file_names))
+
+  # Aggregate daily layers to monthly mean
+  monthly_mean <- mean(layers_d_m, na.rm = TRUE)
+  names(monthly_mean) <- paste0("precip_", m)
+  ls_p_m_mean_Agromet_raw[[m]] <- monthly_mean
+
+  # Aggregate daily layers to monthly total
+  monthly_total <- sum(layers_d_m, na.rm = TRUE)
+  names(monthly_total) <- paste0("precip_", m)
+  ls_p_m_sum_Agromet_raw[[m]] <- monthly_total
+}
+
+p_m_mean_Agromet_raw <- rast(ls_p_m_mean_Agromet_raw)
+p_m_sum_Agromet_raw <- rast(ls_p_m_sum_Agromet_raw)
+
+writeRaster(
+  p_m_mean_Agromet_raw, 
+  filename = file.path(raw_dir, "Weather/p_m_mean_Agromet_raw_2019.tif"), 
+  overwrite = TRUE
+)
+
+writeRaster(
+  p_m_sum_Agromet_raw, 
+  filename = file.path(raw_dir, "Weather/p_m_sum_Agromet_raw_2019.tif"), 
+  overwrite = TRUE
+)
+
+```
+
+
+## ET0 Data (AgERA5)
+
+### Daily Data
+
+```{r}
+# /*===========================================*/
+#'=  Daily ET0 (AgERA5) =
+# /*===========================================*/
+ls_files_et0_d_Agromet <- 
+  list.files(
+    file.path(raw_dir, "Weather/Agromet_ET0_d_2019"),
+    full.names = FALSE
+  )
+
+et0_d_Agromet_raw <-
+  lapply(
+    ls_files_et0_d_Agromet, 
+    function(x) {
+      # x = ls_files_et0_d_Agromet[10]
+      layer <- rast(file.path(raw_dir, "Weather/Agromet_ET0_d_2019", x))
+
+      # plot(layer)
+      
+     #  Layer names
+      day <- gsub(".*?(\\d{8}).*", "\\1", x)
+      names(layer) <- paste0("d", as.integer(as.Date(day, format = "%Y%m%d") - as.Date(paste0(substr(day, 1, 4), "-01-01")) + 1))
+      
+      return(layer)
+    }
+  ) %>%
+  rast()
+
+writeRaster(
+  et0_d_Agromet_raw, 
+  filename = file.path(raw_dir, "Weather/et0_d_Agromet_raw_2019.tif"), 
+  overwrite = TRUE
+)
+```
+
+
+### Monthly Average ET0
+
+```{r}
+#/*--------------------------------*/
+#' ## Monthly Average and Total ET0
+#/*--------------------------------*/
+ls_dates <- gsub(".*?(\\d{8}).*", "\\1", ls_files_et0_d_Agromet)
+ls_dates_months <- month(as.Date(ls_dates, format = "%Y%m%d"))
+
+
+ls_et0_m_mean_Agromet_raw <- list(rep(NA, length(unique(ls_dates_months))))
+
+ls_et0_m_sum_Agromet_raw <- list(rep(NA, length(unique(ls_dates_months))))
+
+
+for (m in unique(ls_dates_months)) {
+  # m = 1
+  
+  message(paste0("Processing month: ", m))
+
+  tg_file_names <- ls_files_et0_d_Agromet[ls_dates_months == m]
+
+  layers_d_m <- rast(file.path(raw_dir, "Weather/Agromet_ET0_d_2019", tg_file_names))
+
+  # Aggregate daily layers to monthly mean
+  monthly_mean <- mean(layers_d_m, na.rm = TRUE)
+  names(monthly_mean) <- paste0("ET0_", m)
+  ls_et0_m_mean_Agromet_raw[[m]] <- monthly_mean
+
+  # Aggregate daily layers to monthly total
+  monthly_total <- sum(layers_d_m, na.rm = TRUE)
+  names(monthly_total) <- paste0("ET0_", m)
+  ls_et0_m_sum_Agromet_raw[[m]] <- monthly_total
+}
+
+et0_m_mean_Agromet_raw <- rast(ls_et0_m_mean_Agromet_raw)
+et0_m_sum_Agromet_raw <- rast(ls_et0_m_sum_Agromet_raw)
+
+writeRaster(
+  et0_m_mean_Agromet_raw, 
+  filename = file.path(raw_dir, "Weather/et0_m_mean_Agromet_raw_2019.tif"), 
+  overwrite = TRUE
+)
+
+writeRaster(
+  et0_m_sum_Agromet_raw, 
+  filename = file.path(raw_dir, "Weather/et0_m_sum_Agromet_raw_2019.tif"), 
+  overwrite = TRUE
+)
+
+```
