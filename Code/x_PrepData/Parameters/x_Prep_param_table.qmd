@@ -65,4 +65,7 @@ case_hybas_tbl <-
   tidyr::unnest(cols = "tg_hybas_sf") %>%
   data.table() %>%
   sf::st_as_sf()
+
+param_tbl <-
+  readRDS(here(int_dir, "SWY_inputs/0_param_tbl.rds"))
 ```
