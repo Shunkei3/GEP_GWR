@@ -1,7 +1,11 @@
-# /*===========================================*/
-#'= NDVI Data is downloaded from  =
-# /*===========================================*/
+---
+title: "Preprocess NDVI Data for Analysis"
+---
 
+
+```{r}
+library(here)
+i_am("Scr/Code/x_PrepData/Prep_NDVI.qmd")
 
 
 library(data.table)
@@ -11,21 +15,29 @@ library(dplyr)
 library(ggplot2)
 library(tmap)
 
-base_dt_dir <- "/Volumes/baseHD/NatCapTEEMs/GEP/GWR/Data"
-out_dir <- "/Volumes/ext_crucial/NatCapTEEMs/GEP/GWR/Data/Intermediate"
+# /*===== Path Configuration =====*/
+source(here("Scr/Code/0_path_config.R"))
+```
 
-ls_file_names <- list.files(
-  file.path(base_dt_dir, "Raw/NDVI/MOD13C2_061-20250708_040832"), 
+# Data Preparation
+
+```{r}
+
+# === List of NDVI files (2019)=== #
+ls_navi_names <- list.files(
+  file.path(raw_dir, "NDVI/MOD13C2_061-20250713_203352"), 
   full.names = FALSE
 )
 
+# === Load NDVI Data === #
+
 ls_ndvi_raw <- 
   lapply(
-    ls_file_names, 
+    ls_navi_names, 
     function(x) {
-      # x = ls_file_names[1]
+      # x = ls_navi_names[1]
 
-      file_path <- file.path(base_dt_dir, "Raw/NDVI/MOD13C2_061-20250708_040832", x)
+      file_path <- file.path(raw_dir, "NDVI/MOD13C2_061-20250713_203352", x)
 
       layer_raw <- rast(file_path, raw = TRUE) 
 
@@ -33,7 +45,7 @@ ls_ndvi_raw <-
       
       layer <- layer * 0.0001
 
-      plot(layer)
+      # plot(layer)
       
       # Layer names
       day <- as.integer(sub(".*A\\d{4}(\\d{3})\\..*", "\\1", x))
@@ -45,11 +57,10 @@ ls_ndvi_raw <-
   ) %>%
   rast()
 
-# plot(ls_ndvi_raw[[5]])
 
 writeRaster(
   ls_ndvi_raw, 
-  filename = file.path(base_dt_dir, "Raw/NDVI/ndvi_m_2020.tif"), 
+  filename = file.path(raw_dir, "NDVI/ndvi_m_2019.tif"), 
   overwrite = TRUE
 )
-
+```
