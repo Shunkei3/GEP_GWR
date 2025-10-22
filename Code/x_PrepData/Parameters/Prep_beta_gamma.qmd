@@ -36,17 +36,17 @@ There is no clear guidance on how to set this parameter. Here, I derive gamma pa
 
 ```{r}
 library(here)
-i_am("Scr/Code/InVEST_SWY/PrepData/Parameters/Prep_beta_gamma.qmd")
+i_am("Scr/Code/x_PrepData/Parameters/Prep_beta_gamma.qmd")
 
 
 # /*===== Load Functions =====*/
 # Always load the updated version of the code
-path_source_Rfunc <- here("Scr/Code/InVEST_SWY/x_SWY_Functions.R")
+path_source_Rfunc <- here("Scr/Code/x_SWY_Functions.R")
 if(file.exists(path_source_Rfunc)){
   file.remove(path_source_Rfunc)
 }
 # Create R script from qmd
-quarto::qmd_to_r_script(qmd = here("Scr/Code/InVEST_SWY/x_SWY_Functions.qmd"))
+quarto::qmd_to_r_script(qmd = here("Scr/Code/x_SWY_Functions.qmd"))
 # Load functions
 source(path_source_Rfunc)
 ```
@@ -56,11 +56,11 @@ source(path_source_Rfunc)
 ```{r}
 # /*===== Watersheds =====*/
 hybas_tbl <- 
-  readRDS(file.path(int_dir, "case_hybas_tbl.rds")) %>%
+  readRDS(file.path(int_dir, "case_hybas_tbl_sf.rds")) %>%
   tidyr::unnest(cols = "tg_hybas_sf") %>%
   st_as_sf()
 
-# format(object.size(hybas_tbl_r), units = "auto")
+# format(object.size(hybas_tbl), units = "auto")
 
 # /*===== Generate directory =====*/
 param_dir <- 
@@ -75,7 +75,7 @@ param_dir <-
 
 ```{r}
 library(future.apply)
-plan(multicore, workers = 15)
+plan(multicore, workers = 20)
 
 library(progressr)
 handlers("txtprogressbar")

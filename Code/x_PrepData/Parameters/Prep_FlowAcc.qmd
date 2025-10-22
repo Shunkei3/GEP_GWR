@@ -54,13 +54,15 @@ if(!dir.exists(file.path(int_dir, "FlowAcc"))){
 # world_bd <- st_transform(world_bd, crs = "epsg:6933") # WGS 84 / World
 
 # === Load Watersheds === #
-case_hybas_tbl <- readRDS(file.path(int_dir, "case_hybas_tbl.rds"))
+case_hybas_tbl <- readRDS(file.path(int_dir, "case_hybas_tbl_sf.rds"))
 
 case_hybas_tbl_unnest <- 
   case_hybas_tbl %>%
   tidyr::unnest(cols = "tg_hybas_sf") %>%
   data.table() %>%
   st_as_sf()
+
+# any(duplicated(case_hybas_tbl_unnest$HYBAS_ID))
 ```
 
 
@@ -84,8 +86,7 @@ I then extracted the flow-accumulation value at each channel head, representing 
 #'=  Define Functions =
 # /*===========================================*/
 get_flow_acc_vals <- function(aoi, stream_raw, flow_acc_raw){
-  # aoi = filter(case_hybas_tbl_unnest, id == "na_7060000010")
-  # aoi = filter(case_hybas_tbl_unnest, id == "af_1061451560") #problematic one
+  # aoi = case_hybas_r[1, ]
   # stream_raw = river_raw
   # flow_acc_raw = flow_acc_raw
 
@@ -142,8 +143,8 @@ get_flow_acc_vals <- function(aoi, stream_raw, flow_acc_raw){
   # === Pick threshold (pixels, median) === #
   res_tbl <- 
     data.table(
-      id = unique(aoi$id),
-      continent = aoi$continent,
+      hybas_id = aoi$HYBAS_ID,
+      region_abbr = aoi$region_abbr,
       any_rivers = !all(is.na(head_flow_acc)),
       t_fac_q05 = as.integer(quantile(head_flow_acc, 0.05, na.rm = TRUE)),
       t_fac_q25 = as.integer(quantile(head_flow_acc, 0.25, na.rm = TRUE)),
@@ -160,62 +161,6 @@ get_flow_acc_vals <- function(aoi, stream_raw, flow_acc_raw){
 #   stream_raw = river_raw,
 #   flow_acc_raw = flow_acc_raw
 # )
-
-# get_flow_acc_values <- function(aoi, river_raw, flow_acc_raw){
-#   # aoi = filter(case_hybas_tbl_unnest, id == "na_7060000010")
-#   # aoi = filter(case_hybas_tbl_unnest, id == "au_5060077570")
-#   # aoi = filter(case_hybas_tbl_expand, id == "au_5060081550") #fail
-
-#   # plot(st_geometry(aoi))
-  
-#   # === Subset streams for the AOI === #
-#   river_aoi <- try(
-#     st_intersection(
-#       river_raw, 
-#       aoi
-#     ) %>%
-#     st_buffer(., dist = 100),
-#     silent = TRUE
-#   )
-
-#   # ggplot() +
-#   #   geom_sf(data = aoi) +
-#   #   geom_sf(data = river_aoi, fill = "blue")
-  
-#   # === Extract Flow Accumulation values for the AOI === #
-#   if(inherits(river_aoi, "try-error")){
-#     res_values <- NA    
-#   } else {
-#     if(nrow(river_aoi) == 0){
-#     # If no rivers in the AOI, return NA values
-#     res_values <- NA    
-#     } else {
-#       # Extract values
-#       flow_acc_values <- 
-#         exactextractr::exact_extract(
-#           flow_acc_raw, 
-#           river_aoi,
-#           progress = FALSE
-#         ) %>% 
-#         rbindlist(idcol = "id") %>%
-#         .[, .(value = sum(coverage_fraction * value, na.rm = TRUE) / sum(coverage_fraction, na.rm = TRUE)), by = id]
-
-#       res_values <- flow_acc_values$value
-#     }
-#   }
-
-#   res_tbl <- 
-#       data.table(
-#         id = unique(aoi$id),
-#         continent = aoi$continent,
-#         any_rivers = !all(is.na(res_values)),
-#         fa_q05 = quantile(res_values, 0.05, na.rm = TRUE)[[1]],
-#         fa_q10 = quantile(res_values, 0.10, na.rm = TRUE)[[1]],
-#         fa_q25 = quantile(res_values, 0.25, na.rm = TRUE)[[1]],
-#         fa_q50 = quantile(res_values, 0.50, na.rm = TRUE)[[1]]
-#       )
-#   return(res_tbl)
-# }
 ```
 
 
@@ -227,7 +172,7 @@ get_flow_acc_vals <- function(aoi, stream_raw, flow_acc_raw){
 #' ## Preparation
 #/*--------------------------------*/
 library(future.apply)
-plan(multicore, workers = 15)
+plan(multicore, workers = 20)
 library(progressr)
 handlers("txtprogressbar")
 handlers(global = TRUE)
@@ -245,9 +190,7 @@ flow_acc_tbl <-
     # /*===== Preparation =====*/
     # --- 1. Watershed data for region r --- #
     case_hybas_r <- 
-      filter(case_hybas_tbl, region_abbr == r) %>%
-      .[["tg_hybas_sf"]] %>%
-      .[[1]]
+      filter(case_hybas_tbl_unnest, region_abbr == r)
     
     # --- 2. Stream data for region r --- #
     river_raw <- 
@@ -281,7 +224,8 @@ flow_acc_tbl <-
         future_lapply(
           xs,
           \(x) {
-            message(paste0("Processing region: ", r, ", watershed ID: ", case_hybas_r$id[x]))
+            # x = 1
+            # message(paste0("Processing region: ", r, ", watershed ID: ", case_hybas_r$HYBAS_ID[x]))
             p()
             
             get_flow_acc_vals(
@@ -314,6 +258,10 @@ saveRDS(
 
 ```{r}
 #| eval: FALSE
+flow_acc_tbl <- readRDS(file.path(int_dir, "FlowAcc", "flow_acc_tbl_global.rds"))
+
+nrow(flow_acc_tbl) == nrow(case_hybas_tbl_unnest)
+
 
 case_hybas_tbl
 
