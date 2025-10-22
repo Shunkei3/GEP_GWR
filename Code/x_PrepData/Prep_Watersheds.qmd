@@ -10,11 +10,14 @@ i_am("Scr/Code/x_PrepData/Prep_Watersheds.qmd")
 # /*===== Load Packages =====*/
 library(data.table)
 library(dplyr)
+library(foreach)
 library(terra)
+library(exactextractr)
 library(sf)
 library(tmap)
 library(ggplot2)
-
+library(tidyterra)
+library(countrycode)
 
 # /*===== Path Configuration =====*/
 source(here("Scr/Code/0_path_config.R"))
@@ -23,58 +26,247 @@ source(here("Scr/Code/0_path_config.R"))
 
 # Data Preparation
 
+## Country Boundaries
+
 ```{r}
 # /*===== Load Country Boundaries =====*/
-ctry_bd <- 
+ctry_bd_raw <- 
   st_read(
-    file.path(raw_dir, "z_ee_r250_correspondence.gpkg"),
+    here(raw_dir, "z_ee_r250_correspondence.gpkg"),
     quiet = TRUE
   )
 
-# /*===== Major GW Basins =====*/
-gw_basins_sf <- 
-    st_read(file.path(raw_dir, "h2wjr-te507/shapefiles/All_merged.shp")) %>%
-    filter(WHYClass == 10)
-
 # /*===== Groundwater Use Data (10^9 m3/year) =====*/
+# From FAO AQUASTAT
 gw_use_dt <- 
   fread(file.path(raw_dir, "GroundwaterUseData/AQUASTAT Dissemination System.csv")) %>%
-  .[Year == 2020, .(country = Area, gw_wdw_bil = Value)] %>%
-  .[, iso3_r250_label := countrycode(country, "country.name", "iso3c")] %>%
-  .[, gw_wdw := gw_wdw_bil * 1e9]
+  .[Year == 2019, .(country = Area, gw_wdw_bil = Value)] %>%
+  .[, iso3_r250_label := countrycode(country, "country.name", "iso3c")]
+
+# /*===== Combine Country Boundaries with Groundwater Use Data =====*/
+ctry_bd <- 
+  ctry_bd_raw %>%
+  filter(!continent %in% c("Antarctica",  "Seven seas (open ocean)" )) %>%
+  mutate(
+    region = case_when(
+      continent == "Africa" ~ "af",
+      continent == "Asia" ~ "as",
+      continent == "Oceania" ~ "au",
+      continent == "Europe" ~ "eu",
+      continent == "North America" ~ "na",
+      continent == "South America" ~ "sa"
+    )
+  ) %>%
+  select(iso3_r250_label, region) %>%
+  merge(., gw_use_dt, by = "iso3_r250_label", all.x = TRUE) %>%
+  mutate(
+    gw_dependent = ifelse(is.na(gw_wdw_bil), FALSE, TRUE)
+    # country = countrycode(iso3_r250_label, "iso3c", "country.name")
+  )
+
+# Country that report groundwater withdrawals
+# ggplot() + 
+#   geom_sf(data = ctry_bd, aes(color = factor(gw_dependent), fill = gw_wdw_bil))
+
+```
 
 
+## Data for identifying watersheds of interest
 
-# /*===== Global Map of Irrigation Areas: GMIA v5 =====*/
+
+```{r}
+#/*--------------------------------*/
+#' ## Major GW Basins
+#/*--------------------------------*/
+gw_basins_sf <- 
+    st_read(
+      file.path(raw_dir, "h2wjr-te507/shapefiles/All_merged.shp"),
+      quiet = TRUE
+    ) %>%
+    filter(WHYClass == 10)
+
+#/*--------------------------------*/
+#' ## Global Map of Irrigation Areas (GMIA) with Groundwater
+#/*--------------------------------*/
 #' + Groundwater-dependent regions
 #' References: 
-#' + THe Global Map of Irrigation Areas - version 5.0 - area irrigated with groundwater expressed as percentage of totla ara equipped for irrigation [@Siebert.etal2013a]
+#' + THe Global Map of Irrigation Areas - version 5.0 - area irrigated with groundwater expressed as percentage of total area equipped for irrigation [@Siebert.etal2013a]
 #' AQUASTAT - FAO's Global Information System on Water and Agriculture: https://www.fao.org/aquastat/en/geospatial-information/global-maps-irrigated-areas/latest-version/
 #' 
 #' + The percentage of the area equipped for irrigation that was actually used for irrigation and the percentages of the area equipped for irrigation that was irrigated with groundwater
 #'
 #' + a resolution of 5 minutes of arc (approximately 10 km at the equator)
 
-gmia <- rast(file.path(raw_dir, "GMIA/gmia_v5_aeigw_pct_aei.asc"))
-
-# plot(gmia)
-
-gmia_sf <- 
-  st_read(
-    file.path(raw_dir, "GMIA/gmia_v5_shp/gmia_v5_aeigw_pct_aei.shp"),
-    quiet = TRUE
-  ) %>%
-  filter(PCT_AEIGW > 50) # Areas where more than 50% of the area equipped for irrigation is irrigated with groundwater
+# gmia <- rast(file.path(raw_dir, "GMIA/gmia_v5_aeigw_pct_aei.asc"))
+# gmia_pos <- mask(gmia, gmia > 0)
 
 # ggplot() + 
-#   geom_sf(data = gmia_sf, aes(fill = PCT_AEIGW)) +
-#   scale_fill_viridis_c()
+#   geom_spatraster(data = gmia_pos) +
+#   scale_fill_viridis_c(
+#     na.value = NA
+#   ) +
+#   geom_sf(
+#     data = vect(st_transform(ctry_bd, crs(gmia_pos))),
+#     aes(color = gw_dependent), fill = NA
+#   ) +
+#   theme_minimal()
+
+# # plot(gmia)
 
 
-# /*=====  =====*/
+# gmia_sf <- 
+#   st_read(
+#     file.path(raw_dir, "GMIA/gmia_v5_aeigw_pct_aei.shp"),
+#     quiet = TRUE
+#   )
+
+
+
+
 ```
 
 
-# 
+```{r}
+#| eval: false
+#/*--------------------------------*/
+#' ## Groundwater Withdrawal for Other Uses
+#/*--------------------------------*/
+#' @Doll.etal2012: 
+#' "Fig. 3. Importance of groundwater withdrawals in the different water use sectors as estimated in this study. 
+#' + (a) Groundwater withdrawals for domestic purposes in percent of total surface and groundwater withdrawals for domestic purposes, 
+#' + **(b) groundwater withdrawals for manufacturing in percent of total surface and groundwater withdrawals for manufacturing**, 
+#' + **(c) groundwater withdrawals for irrigation in percent of total surface and groundwater withdrawals for irrigation** (equivalent to area equipped for irrigation by groundwater in percent of irrigated area), 
+#' + and (d) total groundwater withdrawals in percent of total withdrawals. Mean values for 1998-2002, spatial resolution 0.5°. D = 0 means that the denominator is zero."
+#' 
+#' Can I get the data for (a) domestic groundwater withdrawals, (b) manufacturing groundwater withdrawals?
 
 
+#' @Nazari.etal2025: Global estimates of groundwater withdrawal trends and uncertainties
+# https://doi.pangaea.de/10.1594/PANGAEA.982842?format=html#download
+
+gw_ind_use <- rast(file.path(raw_dir, "GroundwaterUseData/Global_Ave_An_Ind_GWW_2001_2020.nc"))
+gw_agg_use <- rast(file.path(raw_dir, "GroundwaterUseData/Global_Ave_An_Net_Agr_GWW_2001_2020.nc"))
+gw_dom_use <- rast(file.path(raw_dir, "GroundwaterUseData/Global_Ave_An_Dom_GWW_2001_2020.nc"))
+
+# plot(gw_ind_use)
+# plot(gw_agg_use)
+# plot(gw_dom_use)
+
+gw_ind_use_p <- mask(gw_ind_use, gw_ind_use > 100, maskvalues = 0)
+gw_agg_use_p <- mask(gw_agg_use, gw_agg_use > 100, maskvalues = 0)
+gw_dom_use_p <- mask(gw_dom_use, gw_dom_use > 100, maskvalues = 0)
+
+# plot(gw_ind_use_p)
+# plot(gw_agg_use_p)
+# plot(gw_dom_use_p)
+
+
+gw_sum_use <- sum(gw_ind_use_p, gw_agg_use_p, gw_dom_use_p, na.rm = TRUE)
+
+crs(gw_sum_use) <- "EPSG:4326"
+
+# plot(gw_sum_use)
+```
+
+# Select Watersheds of Interest
+
+
+```{r}
+
+ls_regions <- unique(ctry_bd$region)
+
+case_hybas_tbl_sf <- 
+  foreach (r = ls_regions, .combine = rbind) %do% {
+    # r = "na"
+    message("Processing region: ", r)
+
+    # === Load watershed data === #
+    folder_name <- paste0("hybas_", r, "_lev01-12_v1c")
+    file_name <- paste0("hybas_", r, "_lev06_v1c.shp")
+    
+    hybas_sf_r <- 
+      st_read(
+        file.path(raw_dir, "HydroBASINS", folder_name, file_name),
+        quiet = TRUE
+      ) %>%
+      st_transform(crs = st_crs(gw_sum_use))
+
+    share_dt <- 
+      exact_extract(
+        gw_sum_use,
+        hybas_sf_r,
+        include_cols = "HYBAS_ID"
+      ) %>%
+      rbindlist()
+
+    share_dt_raw <- 
+      share_dt[, nonmiss := !is.na(value)] %>%
+      .[, .(
+        num = sum(coverage_fraction[nonmiss], na.rm = TRUE),
+        den = sum(coverage_fraction, na.rm = TRUE)
+      ), by = HYBAS_ID] %>%
+      .[, share_nonmissing := ifelse(den > 0, num / den, NA_real_)] %>%
+      .[share_nonmissing > 0.2 ]
+
+    hybas_sf_r_out <- 
+      hybas_sf_r %>%
+      filter(HYBAS_ID %in% share_dt_raw$HYBAS_ID) %>%
+      st_transform(crs = st_crs(6933))  %>% ## WGS 84 / NSIDC EASE-Grid 2.0 Global
+      st_make_valid()
+
+    # any(!st_is_valid(hybas_sf_r_out))
+    
+    # ggplot() + 
+    #   geom_sf(data = filter(ctry_bd, region == r), fill = NA, color = "black") +
+    #   geom_sf(data = st_transform(hybas_sf_r_out, st_crs(ctry_bd)), fill = "lightblue", color = NA)
+
+    return_tbl <- 
+      tibble(
+        region_abbr = r, 
+        tg_hybas_sf = list(hybas_sf_r_out)
+      )
+  }
+
+case_hybas_tbl_sf <- 
+  case_hybas_tbl_sf %>%
+  mutate(
+    region_abbr = factor(
+      region_abbr,
+      levels = c("af", "as", "au", "eu", "na", "sa")
+    )
+  ) %>%
+  arrange(region_abbr)
+
+
+saveRDS(
+  case_hybas_tbl_sf,
+  file.path(int_dir, "case_hybas_tbl_sf.rds")
+)
+```
+
+# Check
+```{r}
+# /*===== Check =====*/
+hybas_sf_all <- 
+  readRDS(file.path(int_dir, "case_hybas_tbl_sf.rds")) %>%
+  tidyr::unnest(cols = "tg_hybas_sf") %>%
+  st_as_sf() %>%
+  st_transform(crs = st_crs(ctry_bd))
+
+hybas_fix <- st_make_valid(hybas_sf_all)
+
+
+ggplot() + 
+  geom_sf(data = ctry_bd) +
+  geom_sf(data = hybas_fix, fill = "blue", color = NA, alpha = 0.5) +
+  geom_sf(data = filter(ctry_bd, gw_dependent == TRUE), color = "red", fill = NA)
+
+
+ls_ctry <- st_filter(ctry_bd, hybas_sf_all, .predicate = st_intersects)
+
+ggplot() + 
+  geom_sf(data = ctry_bd) +
+  geom_sf(data = ls_ctry, fill = "green", alpha = 0.5) +
+  geom_sf(data = hybas_sf_all, fill = "blue", color = NA, alpha = 0.8) +
+  geom_sf(data = filter(ctry_bd, gw_dependent == TRUE), color = "red", fill = NA)
+```
