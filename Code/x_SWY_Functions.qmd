@@ -19,7 +19,7 @@ title: "Functions to Prepare Inputs for InVEST SWY Model"
 ```{r}
 #| label: load-packages
 library(here)
-i_am("Scr/Code/InVEST_SWY/x_SWY_Functions.qmd")
+i_am("Scr/Code/x_SWY_Functions.qmd")
 
 library(data.table)
 library(dplyr)
@@ -42,25 +42,22 @@ source(here("Scr/Code/0_path_config.R"))
 #| eval: false
 
 # /*===========================================*/
-#'= Skip!!!: This code chunk is just for testing the functions =
+#'= ## Test Run (This code chunk will be ignored) =
 # /*===========================================*/
 # /*===== AOI =====*/
 # Load Watersheds
-case_hybas_tbl <- readRDS(file.path(int_dir, "case_hybas_tbl.rds"))
+hybas_tbl <- 
+  readRDS(file.path(int_dir, "case_hybas_tbl_sf.rds")) %>%
+  unnest(cols = "tg_hybas_sf") %>%
+  st_as_sf()
 
-tmp_region <- "na"
-tmp_region_hybas_sf <- 
-  filter(case_hybas_tbl, region_abbr == tmp_region) %>%
-  .[["tg_hybas_sf"]] %>%
-  .[[1]]
+r <- "af"
+hybas_tbl_r <- filter(hybas_tbl, region_abbr == r)
 
 # === Select a watershed === #
-tmp_aoi_i <- tmp_region_hybas_sf[1,]
-
-# st_crs(tmp_aoi_i)$epsg == espg_code
+tmp_aoi_i <- case_dt_r[1,]
 
 
-aoi_sf_var <- tmp_aoi_i
 ```
 
 
@@ -68,7 +65,7 @@ aoi_sf_var <- tmp_aoi_i
 #| label: setup
 
 espg_code <- 6933 # WGS 84 / NSIDC EASE-Grid 2.0 Global
-year <- 2020
+year <- 2019
 
 # /*===========================================*/
 #'=  Generic Functions =
@@ -119,10 +116,36 @@ swy_dt_dir <-
 ```
 
 
+
 # Comprehensive function to prepare inputs for InVEST SWY model
 + This function will call other functions to prepare each input data. Each function is defined in below. 
 
 + If custom_aoi_provided is TRUE, use the provided `region_abbr` and `save_dir`. This option is used when testing with a custom AOI.
+
+
+```{r}
+#| eval: false
+
+#/*--------------------------------*/
+#' ## Test Run (This code chunk will be ignored)
+#/*--------------------------------*/
+# Test Run
+x = 1
+
+which_aoi <- filter(hybas_tbl_r, HYBAS_ID == "1060000010")
+
+(which_aoi <- filter(hybas_tbl_r, HYBAS_ID == "1060000150"))
+
+
+which_region <- which_aoi$region_abbr
+ave_dir_return = FALSE
+check_and_skip = TRUE
+# If you want to test with a custom AOI, use the following two arguments
+custom_aoi_provided = FALSE
+custom_save_dir = NULL
+```
+
++ If `check_and_skip` is TRUE, each input will be prepared only when it does not exist in the target directory.
 
 ```{r}
 #| label: prepare-inputs
@@ -131,8 +154,8 @@ fn_comp_prep_inputs <-
   function(
     which_region, 
     which_aoi, 
-    save_dir_return = FALSE, 
-    overwrite = TRUE, # This argument is not used now.
+    save_dir_return = FALSE,
+    check_and_skip = TRUE, 
     # If you want to test with a custom AOI, use the following two arguments
     custom_aoi_provided = FALSE, 
     custom_save_dir = NULL
@@ -141,11 +164,6 @@ fn_comp_prep_inputs <-
   if(custom_aoi_provided){
     save_dir <- custom_save_dir
   } else {
-    # Test Run
-    # which_aoi <- tmp_aoi_i
-    # which_aoi <- case_dt_r$hybas[[x]]
-    # which_region <- which_aoi$continent 
-
     # /*===== Create a directory =====*/
     save_dir <-
       fn_gen_save_dir(
@@ -156,67 +174,105 @@ fn_comp_prep_inputs <-
   }
 
   # /*===== Save AOI as a .gpkg file =====*/
-  st_write(
-    which_aoi,
-    file.path(save_dir, "aoi.gpkg"),
-    delete_dsn = TRUE,
-    quiet = TRUE
-  )
+  aoi_save_path <- file.path(save_dir, "aoi.gpkg")
+
+  if(check_and_skip & file.exists(aoi_save_path)){
+    invisible()
+  } else {
+    st_write(
+      which_aoi,
+      file.path(save_dir, "aoi.gpkg"),
+      delete_dsn = TRUE,
+      quiet = TRUE,
+    )
+  }
 
   # /*===== LULC (categorical) =====*/
-  fn_get_lulc_aoi(
-    aoi_sf_var = which_aoi,
-    save_dir_var = save_dir
+  if(check_and_skip & file.exists(file.path(save_dir, "lulc.tif"))){
+    invisible()
+  } else {
+    fn_get_lulc_aoi(
+      aoi_sf_var = which_aoi,
+      save_dir_var = save_dir
   )
-
+  }
+  
   # /*===== DEM (continuous)=====*/
-  fn_get_dem_aoi(
-    region_abbr_var = which_region,
-    aoi_sf_var = which_aoi,
-    save_dir_var = save_dir
-  )
+  if(check_and_skip & file.exists(file.path(save_dir, "dem.tif"))){
+    invisible()
+  } else {
+    fn_get_dem_aoi(
+      region_abbr_var = which_region,
+      aoi_sf_var = which_aoi,
+      save_dir_var = save_dir
+    )
+  }
   # NOTE: I know that aoi_sf_var has region_abbr column, but for sake of generality, I pass region_abbr_var separately. Also, by doing so, I can use this function for custom AOI that does not have region_abbr column.
 
   # /*===== Soil Hydrologic Group (categorical) =====*/
-  fn_get_soil_group_aoi(
-    aoi_sf_var = which_aoi,
-    save_dir_var = save_dir
-  )
+  if(check_and_skip & file.exists(file.path(save_dir, "soil_group.tif"))){
+    invisible()
+  } else {
+    fn_get_soil_group_aoi(
+      aoi_sf_var = which_aoi,
+      save_dir_var = save_dir
+    )
+  }
 
   # /*===== Biophysical Table (csv)=====*/
-  fn_get_biophysical_table(
-    aoi_sf_var = which_aoi,
-    save_dir_var = save_dir
-  )
+  if(check_and_skip & file.exists(file.path(save_dir, "biophysical_table.csv"))){
+    invisible()
+  } else {
+    fn_get_biophysical_table(
+      aoi_sf_var = which_aoi,
+      save_dir_var = save_dir
+    )
+  }
 
   # /*===== ET0 (continuous) =====*/
-  fn_get_monthly_et0(
-    aoi_sf_var = which_aoi,
-    save_dir_var = save_dir,
-    type = "mean"
-  )
+  if(check_and_skip & file.exists(file.path(save_dir, "ET0_monthly"))){
+    invisible()
+  } else {
+    fn_get_monthly_et0(
+      aoi_sf_var = which_aoi,
+      save_dir_var = save_dir,
+      type = "mean"
+    )
+  }
 
   # /*===== Precipitation (continuous) =====*/
   # Monthly Alpha Table (csv) will be created within this function.
-  fn_get_monthly_ppt(
-    aoi_sf_var = which_aoi,
-    save_dir_var = save_dir,
-    type = "mean"
-  )
-
+  if(check_and_skip & file.exists(file.path(save_dir, "Precipitation_monthly"))){
+    invisible()
+  } else {
+    fn_get_monthly_ppt(
+      aoi_sf_var = which_aoi,
+      save_dir_var = save_dir,
+      type = "mean"
+    )
+  }
+  
   # /*===== Climate Zone (categorical) =====*/
-  fn_get_cz(
-    aoi_sf_var = which_aoi,
-    save_dir_var = save_dir
-  )
+  if(check_and_skip & file.exists(file.path(save_dir, "climate_zone.tif"))){
+    invisible()
+  } else {
+    fn_get_cz(
+      aoi_sf_var = which_aoi,
+      save_dir_var = save_dir
+    )
+  }
 
   # /*===== Rain Events Table (csv) =====*/
   # Create the table based on daily precipitation data and climate zone data
-  fn_get_rain_events_tbl(
-    aoi_sf_var = which_aoi,
-    save_dir_var = save_dir,
-    by_climate_zone = TRUE 
-  )
+  if(check_and_skip & file.exists(file.path(save_dir, "rain_events_by_cz.csv"))){
+    invisible()
+  } else {
+    fn_get_rain_events_tbl(
+      aoi_sf_var = which_aoi,
+      save_dir_var = save_dir,
+      by_climate_zone = TRUE 
+    )
+  }
 
   # /*===== Parameters: Threshold Flow Accumulation, Beta_i Parameter, Gamma Prameter (csv) =====*/ 
   # These parameter will be generated separately and saved as csv files. 
@@ -239,7 +295,7 @@ fn_get_lulc_aoi <- function(aoi_sf_var, save_dir_var){
     # save_dir_var <- save_dir
   
   lulc_aoi <- 
-    rast(file.path(raw_dir, "LULC/lulc_esa_2020.tif")) %>%
+    rast(file.path(raw_dir, "LULC", paste0("lulc_esa_", year, ".tif"))) %>%
     crop(
       ., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE))),
       mask = TRUE
@@ -402,7 +458,7 @@ fn_get_biophysical_table <- function(aoi_sf_var, save_dir_var){
   # === Load LULC data === #
   # LULC data will be used to derive both Curve Number and Kc values
   lulc_aoi <- 
-    rast(file.path(raw_dir, "LULC/lulc_esa_2020.tif")) %>%
+    rast(file.path(raw_dir, "LULC", paste0("lulc_esa_", year, ".tif"))) %>%
     crop(., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE)))) %>%
     project(., paste0("epsg:", espg_code), method = "near")
 
@@ -497,7 +553,7 @@ fn_get_biophysical_table <- function(aoi_sf_var, save_dir_var){
   #' ## Kc values (kc_[MONTH])
   #/*--------------------------------*/
   ndvi_m_aoi <- 
-    rast(file.path(raw_dir, paste0("NDVI/ndvi_m_", 2020, ".tif"))) %>%
+    rast(file.path(raw_dir, paste0("NDVI/ndvi_m_", year, ".tif"))) %>%
     crop(., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE)))) %>%
     project(., lulc_aoi, method = "bilinear") %>%
     app(., mod_na_cells)
@@ -911,7 +967,7 @@ fn_get_rain_events_tbl <- function(aoi_sf_var, save_dir_var, by_climate_zone = T
 fn_get_beta_i <- function(region_abbr_var, aoi_sf_var){
   # x = 1; aoi_sf_var <- case_dt_r$hybas[[x]]
   # x = 3; aoi_sf_var <- fail_cases[x,]
-  # region_abbr_var <- aoi_sf_var$continent
+  # region_abbr_var <- aoi_sf_var$region_abbr
 
   # plot(st_geometry(aoi_sf_var))
   
@@ -989,7 +1045,7 @@ fn_get_beta_i <- function(region_abbr_var, aoi_sf_var){
 fn_get_gamma <- function(region_abbr_var, aoi_sf_var){
   # x = 1
   # aoi_sf_var <- case_dt_r$hybas[[x]]
-  # region_abbr_var <- aoi_sf_var$continent
+  # region_abbr_var <- aoi_sf_var$region_abbr
 
 
   # === Load soil hydrologic group data === #
@@ -1007,14 +1063,21 @@ fn_get_gamma <- function(region_abbr_var, aoi_sf_var){
         mask = TRUE 
       )
     # Note that if results = "return", save_dir_var is not used.
-  }
 
-  soil_aoi <- 
-    rast(path_soil_group) %>%
-    crop(
-      ., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE))),
-      mask = TRUE 
-    )
+    soil_aoi <- 
+      soil_aoi %>%
+      crop(
+        ., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE))),
+        mask = TRUE 
+      )
+  } else {
+    soil_aoi <- 
+      rast(path_soil_group) %>%
+      crop(
+        ., vect(st_transform(aoi_sf_var, crs = crs(., proj = TRUE))),
+        mask = TRUE 
+      )
+  }
 
   # plot(soil_aoi)
   
@@ -1033,29 +1096,4 @@ fn_get_gamma <- function(region_abbr_var, aoi_sf_var){
   tab <- merge(tab, gamma_lookup, by = "value")
   gamma_weighted <- round(sum(tab$gamma * tab$area_fraction), 2)
 }
-```
-
-
-# Run the SWY Model
-
-```{r}
-# fn_run_swy <- function(which_aoi, which_region, save_dir_p, tfc = 1000, beta_i = 1, gamma = 1) {
-#   # which_aoi = case_hybas_tbl[1,]
-#   # which_region = which_aoi$continent
-#   # save_dir_p = final_swy_dir
-#   # 
-
-#   # /*===== create a working directory =====*/
-#   save_dir <-
-#     fn_gen_save_dir(
-#       where = save_dir_p,
-#       new_relative_dir_path = file.path(which_region, which_aoi$HYBAS_ID),
-#       return_path = TRUE
-#     )
-
-#   # /*===== Run SWY model =====*/
-
-
-
-# }
 ```
