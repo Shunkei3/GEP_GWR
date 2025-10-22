@@ -17,7 +17,7 @@ Title: "County-Level Value Calculation of Local Recharge"
 # Setup
 ```{r}
 library(here)
-i_am("Scr/Code/Value_Calculation/2_value_calculation.qmd")
+i_am("Scr/Code/5_GEP_calculation.qmd")
 
 # /*===== Load R packages =====*/
 library(data.table)
@@ -143,8 +143,8 @@ gwr_val_dt %>%
   .[, A := fun_get_A(e_r = p_kwh)] %>%
   .[, gep := round(A * l_mean_m * gw_wdw, 2)]
 
-# hist(gwr_val_dt$gep, breaks = 50)
-# summary(gwr_val_dt$gep)
+hist(gwr_val_dt$gep, breaks = 50)
+summary(gwr_val_dt$gep)
 
 # sum(gwr_val_dt$gep, na.rm = TRUE)
 # sum(gwr_val_dt$gep, na.rm = TRUE) / 1e3
@@ -159,6 +159,27 @@ write.csv(
   file.path(final_dir, "ground_water_gep.csv"),
   row.names = FALSE
 )
+
+# === Map of GEP value === #
+gwr_val_dt_sf <- 
+  merge(
+    ctry_bd,
+    gwr_val_dt[, .(iso3_r250_id, gep)],
+    by = "iso3_r250_id",
+    all.x = TRUE
+  )
+
+ggplot() +
+  geom_sf(
+    data = gwr_val_dt_sf, 
+    aes(fill = gep), color = "black"
+  ) +
+  scale_fill_viridis_c(
+    na.value = "lightgrey",
+    labels = scales::label_number(scale_cut = scales::cut_short_scale())
+  ) +
+  theme_bw()
+
 ```
 
 

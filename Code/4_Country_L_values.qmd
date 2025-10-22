@@ -10,7 +10,7 @@ title: "County-Level Aggregation of Local Recharge Layers"
 
 ```{r}
 library(here)
-i_am("Scr/Code/Value_Calculation/1_Country_L_values.qmd")
+i_am("Scr/Code/4_Country_L_values.qmd")
 
 # /*===== Load R packages =====*/
 library(data.table)
@@ -37,7 +37,7 @@ l_glb <- rast(file.path(final_dir, "l_aligned/l_aligned_global.tif"))
 
 # Replace negative values with zero
 # Negative values means that that cell is not contributing to recharge or baseflow generation.
-l_glb_nonneg <- clamp(l_glb, lower = 0)
+l_glb_nonneg <- clamp(l_glb, lower = 0, upper = 1000)
 
 # plot(l_glb_nonneg)
 
@@ -60,6 +60,10 @@ ctry_bd <-
   st_transform(., crs = crs(l_glb, proj = TRUE))
 
 
+ctry_dt <- 
+  st_drop_geometry(ctry_bd) %>%
+  data.table()
+
 # /*===== Major Groundwater =====*/
 gw_basins_sf <- 
     st_read(file.path(raw_dir, "h2wjr-te507/shapefiles/All_merged.shp")) %>%
@@ -79,34 +83,13 @@ swy_status_dt <-
   .[success == TRUE,]
 
 hybas_sf <- 
-  readRDS(file.path(int_dir, "case_hybas_tbl.rds")) %>%
+  readRDS(file.path(int_dir, "case_hybas_tbl_sf.rds")) %>%
   tidyr::unnest(cols = "tg_hybas_sf") %>%
-  data.table() %>%
-  .[HYBAS_ID %in% swy_status_dt$hybas_id, ] %>%
-  .[,.(region = region_abbr, hybas_id = HYBAS_ID, geometry)] %>%
   st_as_sf() %>%
+  filter(HYBAS_ID %in% swy_status_dt$hybas_id) %>%
+  select(region = region_abbr, hybas_id = HYBAS_ID) %>%
   st_transform(st_crs(ctry_bd))
 
-# /*===== Country Boundary =====*/
-ctry_bd <- 
-  st_read(here(raw_dir, "z_ee_r250_correspondence.gpkg")) %>%
-  st_transform(st_crs(hybas_sf)) %>%
-  filter(!continent %in% c("Antarctica",  "Seven seas (open ocean)" )) %>%
-  mutate(
-    region = case_when(
-      continent == "Africa" ~ "af",
-      continent == "Asia" ~ "as",
-      continent == "Oceania" ~ "au",
-      continent == "Europe" ~ "eu",
-      continent == "North America" ~ "na",
-      continent == "South America" ~ "sa"
-    )
-  ) %>%
-   select(region, iso3_r250_id, iso3_r250_label, iso3_r250_name)
-
-ctry_dt <- 
-  st_drop_geometry(ctry_bd) %>%
-  data.table()
 
 # Plot GW basisns, hybas, country boundaries 
 # ggplot() + 
@@ -116,6 +99,75 @@ ctry_dt <-
 #   theme_void()
 ```
 
+
+# Process
+
++ Country boundaries (vector)
++ Local recharge layers (L.tif) for each watershed
++ l layers for each continental region (raster)
+
++ Create a table that contains the following columns:
+  + country information (iso3_r250_id, iso3_r250_label, iso3_r250_name)
+  + region
+  + average recharge value (mm/year)
+    + area-weighted average of L from all watersheds within the country
+
+## By Country
+```{r}
+
+# /*===== With country boundary =====*/
+raw_l_val_dt_ctry <- 
+  exact_extract(
+    l_glb_nonneg, 
+    ctry_bd, 
+    include_cols = "iso3_r250_id"
+  ) %>%
+  rbindlist()
+
+
+l_val_dt_ctry <- 
+  raw_l_val_dt_ctry %>%
+  .[!is.na(value), ] %>%
+  .[, .(
+    l_mean_mm = weighted.mean(value, coverage_fraction, na.rm = TRUE)
+    # l_mean_mm_copy = sum(value * coverage_fraction, na.rm = TRUE) / sum(coverage_fraction),
+    # l_sum_mm = sum(value * coverage_fraction, na.rm = TRUE)
+    ), by = iso3_r250_id
+  ] %>%
+  merge(., ctry_dt, by = "iso3_r250_id", all.x = TRUE)
+
+summary(l_val_dt_ctry$l_mean_mm)
+
+l_val_dt_ctry[iso3_r250_label == "AUS"]
+
+# === Save === #
+saveRDS(
+  l_val_dt_ctry,
+  file.path(final_dir, "l_val_dt_ctry.rds")
+)
+
+
+# === Map === #
+l_val_dt_ctry_sf <- 
+  merge(
+    ctry_bd,
+    l_val_dt_ctry[, .(iso3_r250_id, l_mean_mm)],
+    by = "iso3_r250_id",
+    all.x = TRUE
+  )
+
+ggplot() + 
+  geom_sf(
+    data = l_val_dt_ctry_sf, 
+    aes(fill = l_mean_mm), color = "black"
+  ) +
+  scale_fill_viridis_c()
+```
+
+
+## By Watersheds
+
+## Identify which watersheds belong to which country
 
 ```{r}
 hybas <- st_make_valid(hybas_sf)
@@ -155,93 +207,29 @@ hybas_ctry_poly <-
   st_collection_extract("POLYGON") %>%
   filter(!st_is_empty(geometry), as.numeric(st_area(.)) > 0) %>%
   st_transform(crs = terra::crs(l_glb_nonneg, proj=TRUE))
-
-
-
 ```
 
-# Process
 
-+ Country boundaries (vector)
-+ Local recharge layers (L.tif) for each watershed
-+ l layers for each continental region (raster)
-
-+ Create a table that contains the following columns:
-  + country information (iso3_r250_id, iso3_r250_label, iso3_r250_name)
-  + region
-  + average recharge value (mm/year)
-    + area-weighted average of L from all watersheds within the country
 
 ```{r}
-
-# /*===== With country boundary =====*/
-raw_l_val_dt_ctry <- 
-  exact_extract(
-    l_glb_nonneg, 
-    ctry_bd, 
-    include_cols = "iso3_r250_id"
-  ) %>%
-  rbindlist()
-
-
-l_val_dt_ctry <- 
-  raw_l_val_dt_ctry %>%
-  .[!is.na(value), ] %>%
-  .[, .(
-    l_mean_mm = weighted.mean(value, coverage_fraction, na.rm = TRUE),
-    # l_mean_mm_copy = sum(value * coverage_fraction, na.rm = TRUE) / sum(coverage_fraction),
-    l_sum_mm = sum(value * coverage_fraction, na.rm = TRUE)
-    ), by = iso3_r250_id
-  ] %>%
-  merge(., ctry_dt, by = "iso3_r250_id", all.x = TRUE)
-
-
 # /*===== With watershed boundary =====*/
 raw_l_val_dt_hybas <- 
   exact_extract(
     l_glb_nonneg, 
-    hybas_ctry_poly, 
-    include_cols = "iso3_r250_id"
+    st_transform(hybas_sf, crs(l_glb_nonneg)), 
+    include_cols = "hybas_id"
   ) %>%
   rbindlist()
 
 l_val_dt_hybas <- 
   raw_l_val_dt_hybas %>%
-  .[!is.na(value), ] %>%
+  # .[!is.na(value), ] %>%
   .[, .(
-    l_mean_mm = weighted.mean(value, coverage_fraction, na.rm = TRUE),
-    # l_mean_mm_copy = sum(value * coverage_fraction, na.rm = TRUE) / sum(coverage_fraction),
-    l_sum_mm = sum(value * coverage_fraction, na.rm = TRUE)
-    ), by = iso3_r250_id
-  ] %>%
-  merge(., ctry_dt, by = "iso3_r250_id", all.x = TRUE)
+    # l_mean_mm = weighted.mean(value, coverage_fraction, na.rm = TRUE)
+    l_mean_mm_copy = sum(value * coverage_fraction, na.rm = TRUE) / sum(coverage_fraction)
+    # l_sum_mm = sum(value * coverage_fraction, na.rm = TRUE)
+    ), by = hybas_id
+  ]
 
-
-
-
-
-saveRDS(
-  l_val_dt_ctry,
-  file.path(final_dir, "l_val_dt_ctry.rds")
-)
-
-
-
-
-
-
-
-# ggplot() + 
-#   geom_sf(
-#     data = ctry_bd_l_sf, 
-#     aes(fill = l_mean_mm), color = "black"
-#   ) +
-#   scale_fill_viridis_c()
-
-# mean(ctry_l_vals$l_mean_mm, na.rm = TRUE)
-
-# ctry_l_vals[iso3_r250_label %in% c("USA", "CAN"), ]
-
-
-# ctry_l_vals[iso3_r250_name %in% c("Canada")]
+# summary(l_val_dt_hybas$l_mean_mm)
 ```

@@ -269,12 +269,41 @@ final_global_l <-
   )
 
 # plot(final_global_l)
+```
+
+
+# Check
+
+## By Region
++ af: max = 676
++ as: max = 238
++ au: max = 567
++ eu: max = 92
++ na: max = 232
++ sa: max = Inf
+
+
+
+
+```{r}
+l_aligned_dir <- fn_gen_save_dir(final_dir,"l_aligned", return_path = TRUE)
 
 #/*--------------------------------*/
 #' ## Check: By Region
 #/*--------------------------------*/
-r = "eu"
-l_aligned_layer_r <- rast(file.path(l_aligned_dir, paste0("l_aligned_", r, ".tif")))
+r = "sa"
+l_aligned_layer_r <- 
+  rast(file.path(l_aligned_dir, paste0("l_aligned_", r, ".tif")))
+
+summary(values(l_aligned_layer_r))
+
+upper_bound <- quantile(
+  values(l_aligned_layer_r, dataframe=FALSE), 
+  probs = c(0.995, 0.99), 
+  na.rm = TRUE
+)
+
+l_aligned_layer_r <- clamp(l_aligned_layer_r, lower = 0, upper = upper_bound)
 
 ggplot() + 
   geom_spatraster(data = l_aligned_layer_r) +
@@ -286,11 +315,40 @@ ggplot() +
   ) +
   theme_bw()
 
+
+plot(l_aligned_layer_r)
+
+test_vals_dt <- 
+  values(l_aligned_layer_r, dataframe=FALSE) %>%
+  data.table() %>%
+  setnames("lyr.1", "l_value")
+  
+summary(test_vals_dt)
+quantile(test_vals_dt[["l_value"]], probs = c(0.99), na.rm = TRUE)
+
+ggplot() + 
+  geom_histogram(
+    # data = test_vals_dt[l_value > 100 & l_value < 400, ],
+    data = test_vals_dt,
+    aes(x = l_value),
+    bins = 100
+  ) +
+  theme_bw()
+
+test_vals_dt[l_value == 1000,]
+```
+
+
+
+
+## Global
+```{r}
 #/*--------------------------------*/
 #' ## Check: Global
 #/*--------------------------------*/
 l_aligned_global <- rast(file.path(l_aligned_dir, "l_aligned_global.tif"))
 
+summary(values(l_aligned_global))
 
 # ggplot() + 
 #   geom_spatraster(data = l_aligned_global) +
@@ -300,5 +358,4 @@ l_aligned_global <- rast(file.path(l_aligned_dir, "l_aligned_global.tif"))
 #     n.breaks = 10,
 #     labels = scales::label_number(suffix = "mm"),
 #   )
-
 ```
