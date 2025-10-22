@@ -5,7 +5,7 @@ title: "Run InVEST SWY Model"
 # Setups
 ```{r}
 library(here)
-i_am("Scr/Code/InVEST_SWY/2_Run_SWY.qmd")
+i_am("Scr/Code/2_Run_SWY.qmd")
 
 # /*===== Load R packages =====*/
 library(data.table)
@@ -28,7 +28,7 @@ final_swy_dir <-
 library(reticulate)
 # Inspect what R is using:
 # py_config()
-source_python(here("Scr/Code/InVEST_SWY/x_SWY_Runner.py"))
+source_python(here("Scr/Code/x_SWY_Runner.py"))
 ```
 
 # Prerequisites
@@ -40,7 +40,7 @@ param_tbl <- readRDS(file.path(int_dir, "SWY_inputs/0_param_tbl.rds"))
 
 # /*===== Load Watersheds =====*/
 case_hybas_tbl <- 
-  readRDS(file.path(int_dir, "case_hybas_tbl.rds")) %>%
+  readRDS(file.path(int_dir, "case_hybas_tbl_sf.rds")) %>%
   tidyr::unnest(cols = "tg_hybas_sf") %>%
   data.table()
 
@@ -169,6 +169,10 @@ run_swy(
     beta_i = 0.28,
     gamma = 0.84
 )
+
+
+ogrinfo -al -so /path/to/aoi.gpkg aoi
+
 ```
 
 

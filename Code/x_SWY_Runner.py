@@ -2,6 +2,13 @@ import sys
 import logging
 from pathlib import Path
 
+import warnings
+from osgeo import gdal
+
+# Suppress all GDAL warnings
+gdal.PushErrorHandler('CPLQuietErrorHandler')
+gdal.DontUseExceptions()
+
 import natcap.invest.utils
 from natcap.invest.seasonal_water_yield import seasonal_water_yield
 
@@ -37,6 +44,7 @@ def run_swy(
     # /*---- Paths ----*/
     inputs = Path(inputs_dir).resolve()
     workspace = Path(workspace_dir).resolve()
+    # if workspace does not exist, create it
     workspace.mkdir(parents=True, exist_ok=True)
     
     # Collect inputs
@@ -98,6 +106,7 @@ def run_swy(
 
 # --- Test Run --- #
 # base = Path("/Volumes/baseHD/NatCapTEEMs/GEP/GWR/Data/Intermediate/SWY_inputs/af/1060000150")
+
 # print(_find_required_file(base, "aoi.gpkg"))
 
 # workspace_dir = "/Volumes/baseHD/NatCapTEEMs/GEP/GWR/Data/Final/SWY/af/1060000160"
@@ -106,7 +115,7 @@ def run_swy(
 # beta_i = 0.28
 # gamma = 0.84
 
-# --- Example usage ---
+# # --- Example usage --- #
 # tmp_id = 1060000160
 # run_swy(
 #     workspace_dir = "/Volumes/baseHD/NatCapTEEMs/GEP/GWR/Data/Final/SWY/af/" + str(tmp_id),
