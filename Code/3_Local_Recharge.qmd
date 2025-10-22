@@ -14,7 +14,7 @@ title: "Generate Local Recharge Layer (L.tif) from InVEST SWY Outputs"
 # Setup
 ```{r}
 library(here)
-i_am("Scr/Code/InVEST_SWY/3_local_recharge.qmd")
+i_am("Scr/Code/3_local_recharge.qmd")
 
 # /*===== Load R packages =====*/
 library(data.table)
@@ -40,7 +40,7 @@ final_swy_dir <- file.path(final_dir, "SWY")
 ```{r}
 # === List of  Watersheds === #
 hybas_tbl <- 
-  readRDS(file.path(int_dir, "case_hybas_tbl.rds")) %>%
+  readRDS(file.path(int_dir, "case_hybas_tbl_sf.rds")) %>%
   tidyr::unnest(cols = "tg_hybas_sf") %>%
   data.table() %>%
   .[,.(region = region_abbr, hybas_id = HYBAS_ID, geometry)]
@@ -267,4 +267,38 @@ final_global_l <-
       filename = file.path(l_aligned_dir, "l_aligned_global.tif"),
       overwrite = TRUE
   )
+
+# plot(final_global_l)
+
+#/*--------------------------------*/
+#' ## Check: By Region
+#/*--------------------------------*/
+r = "eu"
+l_aligned_layer_r <- rast(file.path(l_aligned_dir, paste0("l_aligned_", r, ".tif")))
+
+ggplot() + 
+  geom_spatraster(data = l_aligned_layer_r) +
+  scale_fill_whitebox_c(
+    palette = "muted",
+    na.value = NA,
+    n.breaks = 5,
+    labels = scales::label_number(suffix = "mm"),
+  ) +
+  theme_bw()
+
+#/*--------------------------------*/
+#' ## Check: Global
+#/*--------------------------------*/
+l_aligned_global <- rast(file.path(l_aligned_dir, "l_aligned_global.tif"))
+
+
+# ggplot() + 
+#   geom_spatraster(data = l_aligned_global) +
+#   scale_fill_whitebox_c(
+#     palette = "muted",
+#     na.value = NA,
+#     n.breaks = 10,
+#     labels = scales::label_number(suffix = "mm"),
+#   )
+
 ```
