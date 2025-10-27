@@ -8,6 +8,7 @@ README_files
 *.Ruserdata
 *.Rproj.user
 *.html
+*.Rmarkdown
 
 z_CoSWAT
 Writing/z_Template
@@ -25,4 +26,9 @@ Writing/z_images
 **/z_others
 **/z_copy_code
 **/z_obsolete
+**/x_others
+**/y_report
 
+
+**/z_images
+**/z_report
