@@ -7,18 +7,42 @@ title: "Prepare Results for Writing"
 
 # Setup
 ```{r}
+#| label: prep-setup
 library(here)
 i_am("Scr/Writing/x_PrepareResults.qmd")
 
 # /*===== Load R packages =====*/
+library(RefManageR)
+
 library(data.table)
 library(dplyr)
+library(tibble)
+library(dplyr)
+library(magrittr)
 
 library(terra)
 library(sf)
 
-library(ggplot2)
 library(tidyterra)
+
+library(ggplot2)
+library(ggthemes)
+library(grid)      # for margin()
+library(gridExtra)
+library(scico)
+library(ggokabeito)
+library(viridis)
+# library(ggpubfigs)
+library(scattermore)
+library(gganimate)
+library(patchwork)
+library(ggtext)
+
+library(gridExtra)
+library(ggpubr)
+
+library(officer)
+library(flextable)
 
 # /*===== Base path configurations =====*/
 source(here("Scr/Code/0_path_config.R"))
@@ -28,6 +52,11 @@ source(here("Scr/Code/0_path_config.R"))
 
 # ggplot Theme
 ```{r}
+#| label: prep-define-ggplot-themes
+
+theme_set(theme_minimal(base_family = "Times New Roman"))  # or your font
+
+
 theme_plot <-
   theme_bw() +
   theme(
@@ -93,9 +122,10 @@ theme_facet <-
 
 # Data Prerequisites
 ```{r}
+#| label: prep-data-for-results-maps
 # /*===== Watershed Boundary =====*/
 hybas_sf <- 
-  readRDS(file.path(int_dir, "case_hybas_tbl.rds")) %>%
+  readRDS(file.path(int_dir, "case_hybas_tbl_sf.rds")) %>%
   tidyr::unnest(cols = "tg_hybas_sf") %>%
   data.table() %>%
   .[,.(region = region_abbr, hybas_id = HYBAS_ID, geometry)] %>%
@@ -103,11 +133,13 @@ hybas_sf <-
   st_transform(crs = 4326)
 
 # /*===== Major Groundwater =====*/
-gw_basins_sf <- 
-    st_read(file.path(raw_dir, "h2wjr-te507/shapefiles/All_merged.shp")) %>%
-    filter(WHYClass == 10) %>%
-    st_transform(st_crs(hybas_sf))
+# gw_basins_sf <- 
+#     st_read(file.path(raw_dir, "h2wjr-te507/shapefiles/All_merged.shp")) %>%
+#     filter(WHYClass == 10) %>%
+#     st_transform(st_crs(hybas_sf))
 
+# ggplot() + 
+#   geom_sf(data = gw_basins_sf, aes(fill = WHYClass), color = "black")
 
 # /*===== Country Boundary =====*/
 ctry_bd <- 
@@ -137,27 +169,59 @@ ctry_bd <-
 
 # Global Watershed laying over the Major Groundwater Basins
 
-+ Major Groundwater Basins: 
-+ 
-
 ```{r}
-ggplot() + 
-  # geom_sf(data = ctry_bd, fill = NA, color = "black") +
-  geom_sf(data = hybas_sf, aes(fill = "Watersheds")) + 
-  scale_fill_manual(
-    name = "",
-    values = c("Watersheds" = "lightblue")
-  ) +
+#| eval: false
+#| label: prep-fig-map-tg-watershed
+
+# /*===========================================*/
+#'=  Create a .png image of Global Watershed Boundaries (Run once) =
+# /*===========================================*/
+
+legend_font_size <- 7
+footnote_font_size <- 6
+
+fig_map_tg_watershed <-
+  ggplot() + 
+    geom_sf(data = ctry_bd, fill = NA, color = "black") +
+    geom_sf(data = hybas_sf, aes(fill = "Watersheds"), lwd = 0.01) + 
+    scale_fill_manual(
+      name = "",
+      values = c("Watersheds" = "lightblue")
+    ) +
   theme_void() +
   theme(
-    legend.position = "bottom"
+    legend.position = "bottom",
+    legend.text = element_text(size = 9),
+
+    # put caption at plot edge (default), then add space above it
+    plot.caption.position = "plot",
+    plot.caption = element_textbox_simple(
+      hjust = 0, size = 9,
+      margin = margin(t = 8)   # ← space between figure and caption
+    ),
+
+    # optional: add some bottom breathing room outside the plot area
+    plot.margin = margin(t = 5, r = 5, b = 10, l = 5)
+  ) +
+  labs(
+    caption = "Note: The figure shows the boundaries of watersheds used in the analysis. These watersheds are defined based on HydroBASINS Level 6 from HydroSHEDS v1 (Lehner and Grill 2013). Only watersheds that intersect at least 20 percent of grid cells with strictly positive groundwater withdrawals. In total, 11,528 watersheds globally that meet this criterion."
   )
+
+ggsave(
+  filename = here("Scr/Writing/z_figures/fig_map_tg_watershed.png"),
+  plot = fig_map_tg_watershed,
+  width = 8,       # in inches
+  height = 5,
+  dpi = 300
+)
 ```
 
 
 # Global Local Recharge Layer
 
 ```{r}
+#| label: prep-fig-map-l-r
+#| eval: false
 ls_regions <- unique(hybas_sf$region)
 
 ls_l_layers <- list()
@@ -192,7 +256,6 @@ fig_map_l_r <-
   ) + 
   geom_spatraster(
     data = ls_l_layers[[tg_r]],
-
   ) +
   scale_fill_viridis_c(
     name = "Local Recharge (mm)",
@@ -206,4 +269,50 @@ fig_map_l_r <-
     legend.position = "right",
     plot.title = element_text(hjust = 0.5)
   )
+```
+
+
+# Table: Data Sources for InVEST SWY model
+```{r}
+#| label: prep-data-source
+
+df <- tribble(
+  ~invest_input_name,               ~source,                                                                                      ~note,
+  "Area of Interest",               "HydroBASINS Level 6 from HydroSHEDS v1 (Lehner and Grill, 2013)",                           "Groundwater withdrawal data (Nazari et al., 2025) will be also used to select watersheds of interest.",
+  "Digital Elevation Model (DEM)",  "Void-filled DEM from HydroSHEDS v1 (Lehner et al., 2008)",                                   "",
+  "Land Use / Land Cover (LULC)",   "ESA CCI Land Cover (https://planetarycomputer.microsoft.com/dataset/esa-cci-lcc)",          "",
+  "Soil Hydrologic Group",          "HYSOGs250m v1 (Ross et al., 2018)",                                                          "",
+  "Monthly precipitation",          "AgERA5 daily precipitation (Copernicus Climate Change Service, 2019)",                       "Aggregated to monthly by watershed; used for monthly alpha table and precipitation events by climate zone.",
+  "Monthly reference ET0",          "AgERA5 daily Penman–Monteith ET0 (Copernicus Climate Change Service, 2019)",                 "Aggregated to monthly by watershed.",
+  "Climate zone map",               "Köppen–Geiger 1991–2020 (Beck et al., 2022)",                                                "Used to estimate precipitation event frequency by climate zone."
+)
+
+# --- borders defined up-front ---
+thin  <- fp_border(width = 0.75)
+heavy <- fp_border(width = 1.5)
+
+# --- build flextable (bigger, fixed layout, horizontal rules, centered) ---
+tbl_data_source <- 
+  flextable(df) %>%
+  set_header_labels(
+    invest_input_name = "InVEST input name",
+    source = "Source",
+    note = "Note"
+  ) %>%
+  fontsize(part = "all", size = 8) %>%        # make it larger
+  bold(part = "header", bold = TRUE) %>%
+  align(align = "left", part = "all") %>%
+  valign(val = "top", part = "body") %>%
+  padding(padding = 3, part = "all") %>%
+  set_table_properties(layout = "fixed", align = "center") %>%  # avoid autoshrink; center table
+  # widen columns so text wraps but table looks bigger
+  width(j = "invest_input_name", width = 1.5) %>%
+  width(j = "source", width = 2.5) %>%
+  width(j = "note", width = 2.5) %>%
+  # borders: remove all, then add HORIZONTAL only (easier with helpers)
+  border_remove() %>%
+  hline(i = 1:nrow(df), border = thin,  part = "body") %>%  # between rows
+  hline_top(border = heavy, part = "header") %>%  # top horizontal
+  hline_bottom(border = heavy, part = "header") %>%  # line under header
+  hline_bottom(border = heavy, part = "body")        # bottom horizontal
 ```

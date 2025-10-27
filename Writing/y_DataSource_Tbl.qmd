@@ -1,0 +1,73 @@
+---
+title: "GEP: Evaluation of Groundwater Recharge (Regulation Services) Ecosystem Services: Literature Review"
+author: Shunkei Kakimoto
+format:
+  html:
+    page-layout: full
+    theme: 
+      - simple
+    embed-resources: true
+    number-sections: true
+    number-depth: 3
+    code-fold: true
+    code-summary: "Show the code"
+    code-tools: true
+    toc: true
+    toc-depth: 3
+    toc-expand: 3
+    fontsize: 15pt
+    bibliography: GEP_gwr_ref.bib
+    tbl-cap-location: top
+engine: knitr
+---
+
+# Data Sources
++ **Area of Interest**
+  + Source: HydroBASINS (level 6) from HydroSHEDS v1 [@Lehner.Grill2013]
+  + Note: Groundwater withdrawal data [@Nazari.etal2025] will be used to select watersheds of interest.
+
++ **Digital elevation model**
+  + Source:  Voild-filled DEM from HydroSHEDS v1 [@Lehner.etal2008]
+  + Note: 
++ **Land use/land cover**
+  + Source: ESA Climate Change Initiative Land Cover Maps (https://planetarycomputer.microsoft.com/dataset/esa-cci-lcc)
+  + Note: 
+
++ **Soil hydrologic group**
+  + Source: HYSOGs250m, v1 [@Ross.etal2018]
+  + Note: 
+
++ **Monthly precipitation**
+  + Source: Daily precipitation from AgERA5 dataset [@CopernicusClimateChangeService2019]
+  + Note: The daily data will be aggregated to monthly data for each watershed. Monthly alpha table will be created based on the this data. Furthermore, daily precipitation data will be used to create monthly precipitation events for each climate zone.
+
++ **Monthly reference evapotranspiration**
+  + Source: Daily Penman-Monteith refererence evapotranspiration from AgERA5 dataset [@CopernicusClimateChangeService2019]
+  + Note: The daily data will be aggregated to monthly data for each watershed
+
++ **Climate zone map**
+  + Source: Köppen-Geiger classification map for the period 1991-2020 downloaded from GloH2O [@Beck.etal2022]
+  + Note: This will be used to create monthly precipitation events for each climate zone. 
+
+
+
+
+
+
++ **Biophysical Table Data**
+  + Curve number values from GCN250 dataset [@Jaafar.etal2019]
+  + Global data of monthly crop evapotranspiration coefficient (Kc) is not available. I calculate it using the reflectance-based Kc (NDVI-Kc methods). The NDVI data is obtained from monthly data on MODIS/Terra Vegetation Indices with 0.05 degree resolution [@Didan2021]. See the section of Processing Steps and Calibration for details on the NDVI-Kc methods.
+
+
++ **Threshold Flow Accumulation value**
+  + I derived the threshold flow accumulation value for each watershed based on the global layer of streams (HydroRIVERS v1) and a flow accumulation map. Both datasets are obtained from HydroSHEDS dataset [@Lehner.Grill2013]. 
+  
++ **Beta_i Parameter**
+  + For each watershed, Beta_i Parameter is calculated from the DEM data and the flow accumulation map of that watershed. See the section of Processing Steps and Calibration for details on how to calculate the Beta_i parameter.
+
++ **Gamma Parameter**
+  + Using the soil hydrologic group data, I set the Gamma parameter for each watershed. See the section of Processing Steps and Calibration for details on how to calculate the Gamma parameter for each watershed.
+
+
+
+
