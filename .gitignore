@@ -9,6 +9,7 @@ README_files
 *.Rproj.user
 *.html
 *.Rmarkdown
+*.txt
 
 z_CoSWAT
 Writing/z_Template
