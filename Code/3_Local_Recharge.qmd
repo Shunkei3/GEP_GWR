@@ -168,13 +168,143 @@ l_status_tbl <-
   )]
 
 l_status_tbl[, .(n_success = sum(success), n_total = .N), by = region][order(region)]
+
+sum(l_status_tbl$success)
 ```
 
 
 # Compile L Layers for All Watersheds
+Make sure that L layer for a specific continent includes watersheds from all countries within the continent.
+
++ I found that `region` in `hybas_tbl` does not always correspond to the actual continent of the watershed. This does not affect the SWY model runs, but it is inconvenient when mapping the L layers by continent.
+
++ `continent` and `region_un` columns in "z_ee_r250_correspondence.gpkg" do not have correct continent names for some countries (e.g., French Guiana is assigned to "South America" instead of "Europe").
++ I need information on correspondence between country names and continents in which they are physically located.
+
+## This part should be moved to "Prep_Watersheds.qmd"
+```{r}
+
+# /*===========================================*/
+#'=  Create a correct continent and hybas_id mapping table =
+# /*===========================================*/
+hybas_sf <- st_as_sf(hybas_tbl)
+
+# Use geo-information of country boundaries
+ctry_bd_raw <- 
+  st_read(
+    here(raw_dir, "z_ee_r250_correspondence.gpkg"),
+    quiet = TRUE
+  ) %>%
+  select(iso3c = iso3_r250_label, name_long)
+
+
+# ggplot() + 
+#   geom_sf(data = ctry_bd_raw, aes(fill = Continent_Name), color = "black")
+
+url <- "https://gist.githubusercontent.com/stevewithington/20a69c0b6d2ff846ea5d35e5fc47f26c/raw/country-and-continent-codes-list-csv.csv"
+ctry_info_raw <- 
+  fread(
+    url,
+    encoding = "UTF-8",
+    na.strings = c("", "NA"),
+    check.names = TRUE  # safe column names if there are spaces/hyphens
+  )
+
+ctry_bd <- 
+  merge(
+    ctry_bd_raw, 
+    ctry_info_raw[, .(Continent_Name, iso3c = Three_Letter_Country_Code)],
+    by = "iso3c", all = TRUE
+  ) %>%
+  st_transform(st_crs(hybas_sf)) %>%
+  filter(Continent_Name != "Antarctica" & !is.na(Continent_Name)) %>%
+  mutate(
+    region = case_when(
+      Continent_Name == "Africa" ~ "af",
+      Continent_Name == "Asia" ~ "as",
+      Continent_Name == "Oceania" ~ "au",
+      Continent_Name == "Europe" ~ "eu",
+      Continent_Name == "North America" ~ "na",
+      Continent_Name == "South America" ~ "sa"
+    )
+  )
+
+# Remove duplicates
+ctry_bd <- 
+  ctry_bd %>%
+  filter(!(name_long == "Armenia" & region == "as")) %>%
+  filter(!(name_long == "Azerbaijan" & region == "as")) %>%
+  filter(!(name_long == "Cyprus" & region == "as")) %>%
+  filter(!(name_long == "Georgia" & region == "as")) %>%
+  filter(!(name_long == "Russian Federation" & region == "as")) %>%
+  filter(!(name_long == "Turkey" & region == "as")) %>%
+  filter(!(name_long == "Kazakhstan" & region == "eu")) %>%
+  filter(!(name_long == "United States Minor Outlying Islands" & region == "na"))
+
+saveRDS(
+  ctry_bd,
+  file.path(int_dir, "ctry_region_boundary.rds")
+)
+
+# filter(ctry_bd, iso3c %in% ctry_bd$iso3c[duplicated(ctry_bd$iso3c)]) %>% data.frame()
+
+
+# ggplot() + 
+#   geom_sf(data = ctry_bd, aes(fill = region), color = "black")
+
+
+
+#/*--------------------------------*/
+#' ## Grouping watersheds by region
+#/*--------------------------------*/
+hybas_region_tbl <- foreach(r = unique(ctry_bd$region), .combine = rbind) %do% {
+  # r = "eu"
+
+  message(paste0("Processing region: ", r))
+
+  tg_ctry_bd <- filter(ctry_bd, region == r)
+
+  # ggplot() + geom_sf(data = tg_ctry_bd, aes(fill = region))
+
+  # Identify hybas_ids within the region
+  tg_hybas_sf <- 
+    hybas_sf[tg_ctry_bd, ] %>%
+    mutate(region = r)
+
+  # ggplot() + 
+  #   geom_sf(data = tg_ctry_bd, aes(fill = region)) +
+  #   geom_sf(data = tg_hybas_sf, fill = "lightblue", alpha = 0.6, color = NA)
+
+  return(tg_hybas_sf)
+}
+
+# Check: Any duplications?
+any(duplicated(hybas_region_tbl$hybas_id)) # Yes
+# Remove duplications
+hybas_region_tbl <- 
+  hybas_region_tbl %>%
+  distinct(hybas_id, .keep_all = TRUE)
+# Check: The number of hybas_ids should be the same as the original hybas_tbl
+length(unique(hybas_region_tbl$hybas_id)) == nrow(hybas_tbl) # TRUE
+# Check: Visualization
+ggplot() + 
+  geom_sf(data = hybas_region_tbl, aes(fill = region), color = NA)
+
+
+saveRDS(
+  hybas_region_tbl,
+  file.path(int_dir, "hybas_region_tbl.rds")
+)
+```
+
+
+
 
 ```{r}
-# /*===== Parallel Setup =====*/
+# /*===========================================*/
+#'=  Preparation =
+# /*===========================================*/
+# /*===== Setup =====*/
 # library(future.apply)
 # plan(multicore, workers = 15)
 
@@ -182,29 +312,49 @@ library(progressr)
 handlers("txtprogressbar")
 # handlers(global = TRUE)
 
-# /*===== Save Directory Creation =====*/
+# === 1. Load watershed boundaries === #
+hybas_region_tbl <- 
+  readRDS(file.path(int_dir, "hybas_region_tbl.rds")) %>%
+  data.table()
+
+# === 2. Create Dave Directory === #
 l_aligned_dir <- fn_gen_save_dir(final_dir,"l_aligned", return_path = TRUE)
 
-# /*===== Run =====*/
-ls_regions <- unique(l_status_tbl$region)
+# === 3. Find all L_man.tif files === #
+ls_l_files <- 
+  list.files(
+    final_swy_dir, 
+    pattern = "^L_man\\.tif$", 
+    recursive = TRUE, 
+    full.names = TRUE
+  )
 
-for(r in ls_regions){
-  # r = "af"
+parent_dir <- basename(dirname(ls_l_files))
+
+
+# /*===========================================*/
+#'=  Run =
+# /*===========================================*/
+
+for(r in unique(hybas_region_tbl$region)){
+  # r = "eu"
   message(paste0("Compiling L layers for region: ", r))
 
-  ls_l_tifs_r <- 
-    list.files(
-      file.path(final_swy_dir, r),
-      pattern = "L_man\\.tif$",
-      recursive = TRUE,
-      full.names = TRUE
-    )
-  
+  # /*===== List of all L layers =====*/
+  ls_hybas_ids <- hybas_region_tbl[region == r, hybas_id]
+
+  ls_paths_l_tifs_r <- 
+    lapply(ls_hybas_ids, function(id) ls_l_files[parent_dir == id]) %>%
+    unlist()
+
+  # === Load DEM layer as a template === #
   templ_dem <- rast(file.path(raw_dir, "DEM", paste0("hyd_", r, "_dem_15s.tif")))
 
+  # === Generate save directory === #
   out_dir <- fn_gen_save_dir(l_aligned_dir, r, return_path = TRUE)
 
-  xs <- 1:length(ls_l_tifs_r)
+  # === Align all L layers to the template DEM === #
+  xs <- 1:length(ls_paths_l_tifs_r)
 
   with_progress({
     p <- progressor(along = xs)
@@ -216,7 +366,7 @@ for(r in ls_regions){
           # x = 1
           p()
 
-          l_file = ls_l_tifs_r[x]
+          l_file = ls_paths_l_tifs_r[x]
           
           project(
             rast(l_file), 
