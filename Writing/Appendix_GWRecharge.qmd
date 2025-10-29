@@ -152,12 +152,38 @@ Given this gradient in lateral subsurface connectively, I assigned following Gam
 
 # Results and Discussion
 
+```{r}
+#| label: fig-map-gw-recharge-by-region
+#| fig-cap: "Estimated groundwater recharge rates (mm) by region in 2019"
+#| fig-asp: .7
+#| out-width: 95%
+#| fig-width: 8.142857
+
+knitr::include_graphics(here("Scr/Writing/z_figures/local_recharge_by_region.png"))
+```
+
+
+```{r}
+#| label: fig-map-gw-gep
+#| fig-cap: "Estimated Gross Ecosystem Product (GEP) of natural groundwater recharge regulating service (in USD) by country in 2019"
+
+
+knitr::include_graphics(here("Scr/Writing/z_figures/gep_map.png")) 
+```
 
 
 
 ## Previous Studies on Estimation of Groundwater Recharge Rates
 
++ @Wiebe.Rudolph2020: 
+  + Using a hydrological model, they estimate annual recharge rate in the Alder Creek watershed on the Waterloo Moraine near Kitchener-Waterloo, Ontario.
+  + They find that the average annual recharge rate varies up to 140 mm.
 
++ @Lee.etal2024: A high-resolution map of diffuse groundwater recharge rates for **Australia**
+  + This paper estimates long-term natural groundwater recharge across Australia and finds that recharge is generally much lower than previously reported. Using more than 98,000 groundwater samples, the authors show that most of inland Australia receives extremely low recharge—often less than 1 to 10 mm per year. **On average, across all of Australia the median recharge rate is about 40–45 mm per year**, while their continent-wide map gives an average of about 23 mm per year. Recharge is highest in the tropical north and along parts of the east coast (often over 100 mm per year, and locally above 600 mm per year) and lowest in the arid interior, where recharge can be close to zero for long periods.
+
++ @Mohan.etal2018: Predicting groundwater recharge for varying land cover and climate conditions – a global meta-study
+  + This paper compiles 715 local groundwater recharge estimates from around the world and uses them to produce a global estimate of long-term diffuse recharge from rainfall. **Across all sites, they find that mean annual recharge is about 73 mm/year with very large variability depending on climate and land cover.** Their global model predicts an average recharge of 134 mm/year, which corresponds to about 22% of global rainfall becoming recharge. Recharge is highest in humid, forested tropical regions (often above 400–500 mm/year) and lowest in arid and semi-arid regions (less than 10 mm/year, often close to zero). The study confirms that Australia, North Africa, and the Middle East have some of the world’s lowest recharge rates, while Southeast Asia, the Amazon, and Central Africa show the highest recharge. Overall, the paper emphasizes that recharge is strongly controlled by climate—especially precipitation and evapotranspiration—and varies greatly across regions.
 
 
 
