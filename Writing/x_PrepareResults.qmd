@@ -37,12 +37,18 @@ library(scattermore)
 library(gganimate)
 library(patchwork)
 library(ggtext)
+library(stringr)
 
 library(gridExtra)
 library(ggpubr)
 
+theme_update(text = element_text(family = "Times New Roman"))
+
+
 library(officer)
 library(flextable)
+set_flextable_defaults(font.family = "Times New Roman")
+
 
 # /*===== Base path configurations =====*/
 source(here("Scr/Code/0_path_config.R"))
@@ -54,7 +60,7 @@ source(here("Scr/Code/0_path_config.R"))
 ```{r}
 #| label: prep-define-ggplot-themes
 
-theme_set(theme_minimal(base_family = "Times New Roman"))  # or your font
+  # or your font
 
 
 theme_plot <-
@@ -123,14 +129,14 @@ theme_facet <-
 # Data Prerequisites
 ```{r}
 #| label: prep-data-for-results-maps
+
 # /*===== Watershed Boundary =====*/
 hybas_sf <- 
-  readRDS(file.path(int_dir, "case_hybas_tbl_sf.rds")) %>%
-  tidyr::unnest(cols = "tg_hybas_sf") %>%
-  data.table() %>%
-  .[,.(region = region_abbr, hybas_id = HYBAS_ID, geometry)] %>%
-  st_as_sf() %>%
-  st_transform(crs = 4326)
+  readRDS(file.path(int_dir, "hybas_region_tbl.rds")) %>%
+   st_transform(crs = 4326)
+
+
+
 
 # /*===== Major Groundwater =====*/
 # gw_basins_sf <- 
@@ -143,27 +149,72 @@ hybas_sf <-
 
 # /*===== Country Boundary =====*/
 ctry_bd <- 
-  st_read(here(raw_dir, "z_ee_r250_correspondence.gpkg")) %>%
-  select(iso3_r250_id, iso3_r250_label, iso3_r250_name, continent) %>%
-  st_transform(st_crs(hybas_sf)) %>%
-  filter(!continent %in% c("Antarctica",  "Seven seas (open ocean)" )) %>%
-  mutate(
-    region = case_when(
-      continent == "Africa" ~ "af",
-      continent == "Asia" ~ "as",
-      continent == "Oceania" ~ "au",
-      continent == "Europe" ~ "eu",
-      continent == "North America" ~ "na",
-      continent == "South America" ~ "sa"
-    )
-  )
+  readRDS(file.path(int_dir, "ctry_region_boundary.rds")) %>%
+  st_transform(crs = st_crs(hybas_sf))
 
 # ggplot() + 
 #   geom_sf(data = ctry_bd, aes(fill = region), color = "black")
+# filter(ctry_bd, iso3_r250_label == "SAU")
 
-# ggplot() + 
-#   geom_sf(data = hybas_sf, fill = "lightblue", color = "black")
+
+# /*===== GEP Results =====*/
+gep_tbl <-
+  fread(file.path(final_dir, "ground_water_gep.csv"))
+
 ```
+
+# GEP Map
+
+```{r}
+#| eval: false
+ctry_gep_sf <-
+  merge(
+    ctry_bd, gep_tbl,
+    by.x = "iso3c", by.y = "iso3_r250_label",
+    all.x = TRUE
+  )
+
+fig_map_gep <- 
+  ggplot() + 
+  geom_sf(
+    data = ctry_gep_sf,
+    aes(fill = ground_water_gep), color = "black",
+    linewidth = 0.2
+  ) +
+  geom_sf(
+    data = filter(ctry_gep_sf, is.na(ground_water_gep)),
+    fill = "lightgrey", linewidth = 0.2
+  ) +
+  theme_void() +
+  labs(fill = "USD") +
+  scale_fill_viridis_c() +
+  theme(
+    # legend.position = "bottom",
+    legend.text = element_text(size = 9, family = "Times New Roman"),
+
+    # put caption at plot edge (default), then add space above it
+    plot.caption.position = "plot",
+    plot.caption = element_textbox_simple(
+      hjust = 0, size = 9,
+      margin = margin(t = 8), # space between figure and caption
+      family = "Times New Roman"
+    ),
+    # optional: add some bottom breathing room outside the plot area
+    plot.margin = margin(t = 5, r = 5, b = 10, l = 5)
+  ) +
+  labs(
+    caption = "Note: The figure shows estimated Groundwater Ecosystem Product (GEP) values by country in 2019, expressed in constant USD. GEP is calculated as the monetary value of natural groundwater recharge, combined with the unit cost of groundwater extraction. Groundwater withdrawal data are from the FAO AQUASTAT Core Database (FAO, 2019). Country-level electricity prices in 2019 are used to approximate pumping energy costs. Countries shown in light grey indicate insufficient data on groundwater withdrawal and/or electricity prices. Estimates reflect direct-use value only."
+  )
+
+ggsave(
+  filename = here("Scr/Writing/z_figures/gep_map.png"),
+  plot = fig_map_gep,
+  width = 8,       # in inches
+  height = 5,
+  dpi = 300
+)
+```
+
 
 
 
@@ -191,13 +242,14 @@ fig_map_tg_watershed <-
   theme_void() +
   theme(
     legend.position = "bottom",
-    legend.text = element_text(size = 9),
+    legend.text = element_text(size = 9, family = "Times New Roman"),
 
     # put caption at plot edge (default), then add space above it
     plot.caption.position = "plot",
     plot.caption = element_textbox_simple(
       hjust = 0, size = 9,
-      margin = margin(t = 8)   # ← space between figure and caption
+      margin = margin(t = 8), # space between figure and caption
+      family = "Times New Roman"
     ),
 
     # optional: add some bottom breathing room outside the plot area
@@ -217,23 +269,383 @@ ggsave(
 ```
 
 
-# Global Local Recharge Layer
+# Global Local Recharge Layer (Don't run)
+
+```{r}
+#| eval: false
+# /*===========================================*/
+#'=  Load an entire L layer =
+# /*===========================================*/
+l_glb <- rast(file.path(final_dir, "l_aligned/l_aligned_global.tif"))
+
+l_glb <- clamp(l_glb, lower = 0, upper = 1000)
+
+ggplot() +
+    geom_spatraster(
+      data = l_glb,
+      # maxcell = 5e+05, # default
+      maxcell = 5e+06
+    ) +
+    scale_fill_whitebox_c(
+      palette = "muted",
+      n.breaks = 5, na.value = NA,
+      name = ""
+      # labels = scales::label_number(suffix = "mm")
+    )
+```
+
+# Loading Local Recharge Layers by Region
+```{r}
+#| eval: false
+
+# /*===========================================*/
+#'=  Load by region =
+# /*===========================================*/
+ls_regions <- unique(hybas_sf$region)
+ls_l_lyrs_r <- list()
+
+for (r in ls_regions){
+  # r = "na"
+  message("Loading L layer for region: ", r)
+  tmp_l <- 
+    rast(file.path(final_dir, "l_aligned", paste0("l_aligned_", r, ".tif")))
+
+  # ls_l_lyrs_r[[r]] <- tmp_l
+  ls_l_lyrs_r[[r]] <- clamp(tmp_l, lower = 0, upper = 1000)
+}
+
+
+# plot(ls_l_lyrs_r[["as"]])
+
+```
+
+# Preparing continent-specific L maps
+
+```{r}
+#/*--------------------------------*/
+#' ## Function to plot boundaries and L layer
+#/*--------------------------------*/
+fn_plot_l_lyr_r <- function(bd, l_lyr_r){
+  ggplot() +
+    geom_spatraster(
+      data = l_lyr_r,
+      # maxcell = 5e+05, # default
+      maxcell = 5e+06
+    ) +
+    scale_fill_whitebox_c(
+      palette = "muted",
+      n.breaks = 5, na.value = NA,
+      name = ""
+      # labels = scales::label_number(suffix = "mm")
+    ) +
+    geom_sf(
+      data = bd,
+      fill = "NA", lwd = 0.1
+    ) +
+    theme_void() +
+    theme(
+      legend.position = "bottom",
+      # plot.title = element_text(hjust = 0.5),
+      legend.key.width = unit(1, "cm"),
+      legend.text = element_text(size = 9, family = "Times New Roman"),
+      plot.title = element_text(
+      family = "Times New Roman")
+    )
+}
+
+#/*--------------------------------*/
+#' ## Centering the continent map
+#/*--------------------------------*/
+correct_ctry_bd <- function(bd) {
+
+  bd_correct <-
+    st_wrap_dateline(
+      bd,
+      options = c("WRAPDATELINE=YES", "DATELINEOFFSET=180"),
+      quiet = TRUE
+    ) %>%
+    st_shift_longitude(.)
+
+  # ggplot() + geom_sf(data = ctry_bd_r)
+
+  return(bd_correct)
+}
+
+```
+
+## Preparing continent-specific L data
+```{r}
+#| eval: false
+
+ls_data_l_lyr_r <- list()
+
+#/*--------------------------------*/
+#' ##  EU (okay)
+#/*--------------------------------*/
+ctry_bd_eu <- filter(ctry_bd, region == "eu")
+hybas_eu <- filter(hybas_sf, region == "eu")
+
+# st_bbox(ctry_bd_eu)
+# ggplot() + 
+#   geom_sf(data = hybas_eu, fill = "lightblue", color = NA) +
+#   geom_sf(data = ctry_bd_eu, fill = NA)
+
+bb <- 
+  st_bbox(
+    # c(xmin = -50, ymin = 20, xmax = 70, ymax = 82.30556),
+    c(xmin = -50, ymin = 20, xmax = 70, ymax = 71),
+    crs = st_crs(ctry_bd_eu)
+  ) %>%
+  st_as_sfc() %>%
+  st_as_sf()
+
+# ggplot() + 
+#   geom_sf(data = bb, fill = "lightblue", color = NA) +
+#   geom_sf(data = ctry_bd_eu, fill = NA, color = "black")
+
+sf_use_s2(FALSE)
+ctry_bd_eu_crop <- st_crop(ctry_bd_eu, st_bbox(bb))
+sf_use_s2(TRUE)
+
+
+# Remove geometry collection
+is_gc <- st_geometry_type(ctry_bd_eu_crop) == "GEOMETRYCOLLECTION"
+ctry_bd_eu_crop <- ctry_bd_eu_crop[!is_gc, ]
+
+# table(st_geometry_type(ctry_bd_eu_crop))
+
+ctry_bd_eu_crop_disag <- 
+  disagg(vect(ctry_bd_eu_crop)) %>%
+  st_as_sf()
+
+
+# Select countries that intersect with watersheds
+ctry_bd_eu_sel <- ctry_bd_eu_crop_disag[hybas_eu, ]
+
+# ggplot() + 
+#   geom_sf(data = hybas_eu, fill = "lightblue", color = NA) +
+#   geom_sf(data = ctry_bd_eu_sel, fill = NA)
+
+# --- L layer --- #
+l_lyr_eu <- ls_l_lyrs_r[["eu"]]
+# plot(l_lyr_r)
+
+# Crop L layer to continent extent
+l_lyr_eu_crop <- crop(l_lyr_eu, vect(ctry_bd_eu_sel), mask = TRUE)
+
+# fn_plot_l_lyr_r(bd = ctry_bd_eu_sel, l_lyr_r = l_lyr_eu_crop)
+
+ls_data_l_lyr_r[["eu"]] <- list(bd = ctry_bd_eu_sel, l_lyr = l_lyr_eu_crop)
+
+#/*--------------------------------*/
+#' ## Asia (okay)
+#/*--------------------------------*/
+ctry_bd_as <- filter(ctry_bd, region == "as")
+hybas_as <- filter(hybas_sf, region == "as")
+
+ctry_bd_as_sel <- ctry_bd_as[hybas_as, ]
+
+# ggplot() + 
+#   geom_sf(data = hybas_as, fill = "lightblue", color = NA) +
+#   geom_sf(data = ctry_bd_as_sel, fill = NA)
+
+l_lyr_as <- ls_l_lyrs_r[["as"]]
+
+# fn_plot_l_lyr_r(bd = ctry_bd_as_sel, l_lyr_r = l_lyr_as)
+
+ls_data_l_lyr_r[["as"]] <- list(bd = ctry_bd_as_sel, l_lyr = l_lyr_as)
+
+#/*--------------------------------*/
+#' ## Africa (okay)
+#/*--------------------------------*/
+ctry_bd_af <- filter(ctry_bd, region == "af")
+hybas_af <- filter(hybas_sf, region == "af") %>% st_make_valid()
+
+# table(st_geometry_type(hybas_af))
+
+ctry_bd_af_sel <- ctry_bd_af[hybas_af, ]
+
+# ggplot() + 
+#   geom_sf(data = hybas_as, fill = "lightblue", color = NA) +
+#   geom_sf(data = ctry_bd_as_sel, fill = NA)
+
+l_lyr_af <- ls_l_lyrs_r[["af"]]
+
+# fn_plot_l_lyr_r(bd = ctry_bd_af_sel, l_lyr_r = l_lyr_af)
+
+ls_data_l_lyr_r[["af"]] <- list(bd = ctry_bd_af_sel, l_lyr = l_lyr_af)
+
+#/*--------------------------------*/
+#' ## Oceania (okay)
+#/*--------------------------------*/
+ctry_bd_au <- correct_ctry_bd( filter(ctry_bd, region == "au"))
+hybas_au <- filter(hybas_sf, region == "au")
+
+# ggplot() + 
+#   geom_sf(data = hybas_au, fill = "lightblue", color = NA) +
+#   geom_sf(data = ctry_bd_au, fill = NA, color = "black")
+
+ctry_bd_au_sel <- ctry_bd_au[hybas_au, ]
+
+l_lyr_au <- ls_l_lyrs_r[["au"]]
+
+# fn_plot_l_lyr_r(bd = ctry_bd_au_sel, l_lyr_r = l_lyr_au)
+
+ls_data_l_lyr_r[["au"]] <- list(bd = ctry_bd_au_sel, l_lyr = l_lyr_au)
+
+#/*--------------------------------*/
+#' ## North America
+#/*--------------------------------*/
+ctry_bd_na <- filter(ctry_bd, region == "na")
+hybas_na <- filter(hybas_sf, region == "na")
+
+# table(st_geometry_type(hybas_na))
+
+# ggplot() + 
+#   geom_sf(data = hybas_na, fill = "lightblue", color = NA) +
+#   geom_sf(data = ctry_bd_na, fill = NA, color = "black")
+
+# ggplot() + geom_sf(data = filter(ctry_bd_na, iso3c == "USA"), fill = NA, color = "black")
+
+ctry_bd_na_disag <- 
+  disagg(vect(ctry_bd_na)) %>%
+  st_as_sf()
+
+# ggplot() + 
+#   geom_sf(data = ctry_bd_na_disag, fill = NA, color = "black")
+
+# table(st_geometry_type(ctry_bd_na_disag))
+
+
+ctry_bd_na_sel <- ctry_bd_na_disag[hybas_na, ]
+
+# ggplot() + 
+#   geom_sf(data = hybas_na, fill = "lightblue", color = NA) +
+#   geom_sf(data = ctry_bd_na_sel, fill = NA, color = "black")
+
+l_lyr_na <- ls_l_lyrs_r[["na"]]
+
+# fig_map_l_lyr_au <- fn_plot_l_lyr_r(bd = ctry_bd_au_sel, l_lyr_r = l_lyr_au)
+
+ls_data_l_lyr_r[["na"]] <- list(bd = ctry_bd_na_sel, l_lyr = l_lyr_na)
+
+
+#/*--------------------------------*/
+#' ## South America
+#/*--------------------------------*/
+ctry_bd_sa <- filter(ctry_bd, region == "sa")
+hybas_sa <- filter(hybas_sf, region == "sa") %>% st_make_valid()
+
+ctry_bd_sa_sel <- ctry_bd_sa[hybas_sa, ]
+
+l_lyr_sa <- ls_l_lyrs_r[["sa"]]
+
+fig_map_l_lyr_sa <- fn_plot_l_lyr_r(bd = ctry_bd_sa_sel, l_lyr_r = l_lyr_sa)
+
+ls_data_l_lyr_r[["sa"]] <- list(bd = ctry_bd_sa_sel, l_lyr = l_lyr_sa)
+```
+
+# Map of Local Recharge by Continent
+```{r}
+#| eval: false
+# /*===========================================*/
+#'=  Preparation =
+# /*===========================================*/
+ls_fig_map_l_r <- list()
+
+for(r in unique(hybas_sf$region)){
+  # r = "na"
+  message("Creating L map for region: ", r)
+  tmp_bd <- ls_data_l_lyr_r[[r]]$bd
+  tmp_l_lyr <- ls_data_l_lyr_r[[r]]$l_lyr
+  
+  tmp_fig_map_l_r <- fn_plot_l_lyr_r(bd = tmp_bd, l_lyr_r = tmp_l_lyr)
+  
+  ls_fig_map_l_r[[r]] <- tmp_fig_map_l_r
+}
+
+
+p_af <- ls_fig_map_l_r[["af"]] + labs(title = paste0("(A) Africa")) 
+p_as <- ls_fig_map_l_r[["as"]] + labs(title = paste0("(B) Asia")) 
+p_au <- ls_fig_map_l_r[["au"]] + labs(title = paste0("(C) Oceania"))
+
+p_eu <- ls_fig_map_l_r[["eu"]] + labs(title = paste0("(D) Europe"))
+p_na <- ls_fig_map_l_r[["na"]] + labs(title = paste0("(E) North America"))
+p_sa <- ls_fig_map_l_r[["sa"]] + labs(title = paste0("(F) South America"))
+```
+
+```{r}
+#| eval: false
+# /*===========================================*/
+#'=  Create Maps=
+# /*===========================================*/
+p_af + p_as + p_au + p_eu + p_na + p_sa +
+plot_layout(ncol = 3, widths = c(2, 2, 2)) +
+  plot_annotation(
+    caption = "Note: The figures show local recharge, in mm, by continent. This figure was created by combining raster layers of local recharge of watersheds within each continent. Black lines indicate country boundaries, and only countries that intersect with the watersheds in each continent are shown.",
+    theme = theme(
+      plot.caption = element_textbox_simple(
+        hjust = 0, size = 10,
+        margin = margin(t = 8, r = 6, b = 2, l = 6)
+      ),
+       text = element_text(family = "Times New Roman"),
+      )
+  ) +
+  plot_layout(widths = c(3, 3, 3))
+  # plot_layout(
+  #   guides = "collect"
+  # ) & 
+  # theme(plot.margin = unit(c(0, 0.5, 1, 0.5), "cm"))
+  
+
+ggsave(
+  filename = here("Scr/Writing/z_figures/local_recharge_by_region.png"),
+  width = 10,       # in inches
+  height = 8,
+  dpi = 300
+)
+
+```
+
+
 
 ```{r}
 #| label: prep-fig-map-l-r
 #| eval: false
-ls_regions <- unique(hybas_sf$region)
+
 
 ls_l_layers <- list()
 
 for (r in ls_regions){
   # r = "na"
-  ls_l_layers[[r]] <- 
+  tmp_l <- 
     rast(file.path(final_dir, "l_aligned", paste0("l_aligned_", r, ".tif")))
+  ls_l_layers[[r]] <- tmp_l
+  # ls_l_layers[[r]] <- clamp(tmp_l, lower = 0, upper = 1000)
 }
 
-ctry_bd_wgs84 <- 
-  st_transform(ctry_bd, crs = st_crs(ls_l_layers[[1]]))
+
+
+# ctry_bd_wgs84 <- 
+#   st_transform(ctry_bd, crs = st_crs(ls_l_layers[[1]]))
+
+r = "au"
+tg_l_layer <- ls_l_layers[[r]]
+ggplot() +
+  geom_spatraster(
+    # data = ls_l_layers
+    data = tg_l_layer,
+  ) +
+   scale_fill_whitebox_c(
+    name = "Local Recharge (mm)",
+    palette = "muted",
+    n.breaks = 5,
+    na.value = NA
+  ) +
+  
+
+
+summary(values(tg_l_layer), na.rm = TRUE)
 
 
 # /*===========================================*/
@@ -241,11 +653,12 @@ ctry_bd_wgs84 <-
 # /*===========================================*/
 tg_r <- "na"
 
-ctry_bd_wgs84_crop <- 
+ctry_bd_crop <- 
   st_intersects(
-    ctry_bd_wgs84,
+    ctry_bd,
     ext(ls_l_layers[[tg_r]])
   )
+
 
 
 fig_map_l_r <- 
@@ -316,3 +729,7 @@ tbl_data_source <-
   hline_bottom(border = heavy, part = "header") %>%  # line under header
   hline_bottom(border = heavy, part = "body")        # bottom horizontal
 ```
+
+# GEP Table
+
+
