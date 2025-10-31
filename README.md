@@ -26,7 +26,7 @@ Each watershed directory is automatically generated with all the necessary input
 
 ## Running the SWY Model
 
-`x_SWY_Runner.py` is written in Python and it serves as a wrapper script to automate the execution of the InVEST Seasonal Water Yield (SWY) model. For consistency of the computing environment, the Python functions written in this script are loaded in R using the `reticulate` package. Then, the SWY model is run for multiple watersheds in parallel.
+`x_SWY_Runner.py` is written in Python and it serves as a wrapper script to automate the execution of the InVEST Seasonal Water Yield (SWY) model. For consistency of the computing environment, the Python functions written in this script are loaded in R using the `reticulate` package. Then, the SWY model is run for multiple watersheds in parallel. These executions are managed in `2_Run_SWY_Model.qmd`.
 
 
 ## GEP Calculation and Result Preparation
