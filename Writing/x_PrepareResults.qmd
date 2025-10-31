@@ -56,76 +56,6 @@ source(here("Scr/Code/0_path_config.R"))
 ```
 
 
-# ggplot Theme
-```{r}
-#| label: prep-define-ggplot-themes
-
-  # or your font
-
-
-theme_plot <-
-  theme_bw() +
-  theme(
-    legend.position = "bottom",
-    axis.text = element_text(size = 14),
-    axis.title = element_text(size = 16),
-    legend.text = element_text(size = 14),
-    legend.key.width = unit(2, "cm"),
-    axis.title.x = element_text(vjust = -1),
-    axis.title.y = element_text(vjust = 2),
-    strip.text = element_text(size = 14),
-    plot.title = element_text(hjust = 0.5),
-    # text = element_text(family = "Times New Roman"),
-    # --- Footnote --- #
-    plot.caption = element_textbox_simple(hjust=0, size = 12)
-  )
-
-
-theme_map_facet <- 
-  theme(
-    legend.position = "bottom",
-    legend.text = element_text(size = 14),
-    legend.key.width = unit(2, "cm"),
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.text.x=element_blank(),
-    axis.ticks.x=element_blank(),
-    axis.text.y=element_blank(),
-    axis.ticks.y=element_blank(),
-    strip.text = element_text(size = 14),
-    plot.title = element_text(hjust = 0.5),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    # text = element_text(family = "Times New Roman"),
-    # --- Footnote --- #
-    plot.caption = element_textbox_simple(hjust=0, size = 12)
-    # --- Padding --- #
-  )
-
-theme_facet <- 
-  theme(
-    legend.position = "bottom",
-    legend.text = element_text(size = 14),
-    legend.key.width = unit(2, "cm"),
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.text.x=element_blank(),
-    axis.ticks.x=element_blank(),
-    axis.text.y=element_blank(),
-    axis.ticks.y=element_blank(),
-    strip.text = element_text(size = 14),
-    plot.title = element_text(hjust = 0.5),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    # text = element_text(family = "Times New Roman"),
-    # --- Footnote --- #
-    plot.caption = element_textbox_simple(hjust=0, size = 12)
-    # --- Padding --- #
-  )
-```
-
-
-
 # Data Prerequisites
 ```{r}
 #| label: prep-data-for-results-maps
@@ -134,9 +64,6 @@ theme_facet <-
 hybas_sf <- 
   readRDS(file.path(int_dir, "hybas_region_tbl.rds")) %>%
    st_transform(crs = 4326)
-
-
-
 
 # /*===== Major Groundwater =====*/
 # gw_basins_sf <- 
@@ -158,7 +85,7 @@ ctry_bd <-
 
 
 # /*===== GEP Results =====*/
-gep_tbl <-
+ground_water_gep <-
   fread(file.path(final_dir, "ground_water_gep.csv"))
 
 ```
@@ -169,16 +96,19 @@ gep_tbl <-
 #| eval: false
 ctry_gep_sf <-
   merge(
-    ctry_bd, gep_tbl,
+    ctry_bd, ground_water_gep,
     by.x = "iso3c", by.y = "iso3_r250_label",
     all.x = TRUE
+  ) %>%
+  mutate(
+    ground_water_gep_thou = ground_water_gep / 1e3
   )
 
 fig_map_gep <- 
   ggplot() + 
   geom_sf(
     data = ctry_gep_sf,
-    aes(fill = ground_water_gep), color = "black",
+    aes(fill = ground_water_gep_thou), color = "black",
     linewidth = 0.2
   ) +
   geom_sf(
@@ -186,12 +116,12 @@ fig_map_gep <-
     fill = "lightgrey", linewidth = 0.2
   ) +
   theme_void() +
-  labs(fill = "USD") +
+  labs(fill = "USD\n(in thousand)") +
   scale_fill_viridis_c() +
   theme(
-    # legend.position = "bottom",
+    legend.position = "bottom",
     legend.text = element_text(size = 9, family = "Times New Roman"),
-
+    legend.key.width = unit(1, "cm"),
     # put caption at plot edge (default), then add space above it
     plot.caption.position = "plot",
     plot.caption = element_textbox_simple(
@@ -203,14 +133,14 @@ fig_map_gep <-
     plot.margin = margin(t = 5, r = 5, b = 10, l = 5)
   ) +
   labs(
-    caption = "Note: The figure shows estimated Groundwater Ecosystem Product (GEP) values by country in 2019, expressed in constant USD. GEP is calculated as the monetary value of natural groundwater recharge, combined with the unit cost of groundwater extraction. Groundwater withdrawal data are from the FAO AQUASTAT Core Database (FAO, 2019). Country-level electricity prices in 2019 are used to approximate pumping energy costs. Countries shown in light grey indicate insufficient data on groundwater withdrawal and/or electricity prices. Estimates reflect direct-use value only."
+    caption = "Note: The figure shows estimated Groundwater Ecosystem Product (GEP) values by country in 2019, expressed in USD. GEP is calculated as the monetary value of natural groundwater recharge, combined with the unit cost of groundwater extraction. Groundwater withdrawal data are from the FAO AQUASTAT Core Database (FAO, 2019). Country-level electricity prices in 2019 are used to approximate pumping energy costs. Countries shown in light grey indicate insufficient data on groundwater withdrawal and/or electricity prices. Estimates reflect direct-use value only."
   )
 
 ggsave(
   filename = here("Scr/Writing/z_figures/gep_map.png"),
   plot = fig_map_gep,
-  width = 8,       # in inches
-  height = 5,
+  width = 7,       # in inches
+  height = 6,
   dpi = 300
 )
 ```
@@ -243,7 +173,6 @@ fig_map_tg_watershed <-
   theme(
     legend.position = "bottom",
     legend.text = element_text(size = 9, family = "Times New Roman"),
-
     # put caption at plot edge (default), then add space above it
     plot.caption.position = "plot",
     plot.caption = element_textbox_simple(
@@ -305,15 +234,25 @@ ls_regions <- unique(hybas_sf$region)
 ls_l_lyrs_r <- list()
 
 for (r in ls_regions){
-  # r = "na"
+  # r = "sa"
   message("Loading L layer for region: ", r)
   tmp_l <- 
     rast(file.path(final_dir, "l_aligned", paste0("l_aligned_", r, ".tif")))
+  
+  # thre <- quantile(values(tmp_l), probs = 0.99, na.rm = TRUE)
 
   # ls_l_lyrs_r[[r]] <- tmp_l
+  # ls_l_lyrs_r[[r]] <- clamp(tmp_l, lower = 0, upper = thre)
   ls_l_lyrs_r[[r]] <- clamp(tmp_l, lower = 0, upper = 1000)
 }
 
+sammry_stat_by_r <- 
+  lapply(ls_regions, function(x) {
+
+    message("Calculating summary stats for region: ", x)
+
+    summary(values(ls_l_lyrs_r[[x]]), na.rm = TRUE)
+  })
 
 # plot(ls_l_lyrs_r[["as"]])
 
@@ -688,6 +627,7 @@ fig_map_l_r <-
 # Table: Data Sources for InVEST SWY model
 ```{r}
 #| label: prep-data-source
+#| eval: true
 
 df <- tribble(
   ~invest_input_name,               ~source,                                                                                      ~note,
@@ -732,4 +672,24 @@ tbl_data_source <-
 
 # GEP Table
 
+```{r}
+tbl_gep <- 
+  ground_water_gep[, ground_water_gep := ifelse(is.na(ground_water_gep), 0, ground_water_gep)] %>%
+  .[,.(
+    Country = iso3_r250_name,
+    `ISO3 ID` = iso3_r250_id,
+    `ISO3 Code` = iso3_r250_label,
+    `GEP (USD)` = ground_water_gep
+  )] %>%
+  flextable(.) %>%
+  autofit() %>%
+  add_footer_lines(values = "Note: The numbers in the column 'GEP (USD)' represent estimated Groundwater Ecosystem Product (GEP) values of natural groundwater recharge by country in 2019, expressed in 2019 USD. GEP is calculated as the monetary value of natural groundwater recharge, combined with the unit cost of groundwater extraction. Groundwater withdrawal data are from the FAO AQUASTAT Core Database (FAO, 2019). Country-level electricity prices in 2019 are used to approximate pumping energy costs. Estimates reflect direct-use value only. GEP values of zero indicate missing values of GEP due to the lack of data on groundwater withdrawal and/or electricity prices.")
+  
+# save_as_docx(
+#   tbl_gep,
+#   path = file.path(here("Scr/Writing/z_tables/gwp_gep_by_country.docx"))
+# )
 
+sum(ground_water_gep$ground_water_gep)
+
+```
