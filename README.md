@@ -39,7 +39,7 @@ Finally, `5_GEP_calculation.qmd` calculates the county-level GEP of groundwater 
 
 ## Code for Writing the Manuscript
 
-The `Writing` directory contains Quarto files used to generate the manuscript associated with this analysis. Figures for the manuscript are produced in `x_PrepareResults.qmd`.
+The `Writing` directory contains Quarto files used to generate the manuscript associated with this analysis. Figures and Tables for the manuscript are produced in `x_PrepareResults.qmd`.
 
 
 
