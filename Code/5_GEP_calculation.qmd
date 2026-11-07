@@ -34,8 +34,6 @@ ctry_bd <-
   st_read(here(raw_dir, "z_ee_r250_correspondence.gpkg")) %>%
   select(iso3_r250_id, iso3_r250_label, iso3_r250_name)
 
-ctry_dt <- data.table(st_drop_geometry(ctry_bd))
-
 ctry_names <- ctry_dt$iso3_r250_name
 ctry_iso3 <- ctry_dt$iso3_r250_label
 
@@ -128,7 +126,9 @@ write.csv(
     iso3_r250_name,
     ground_water_gep = gep,
     note
-  )],
+  )][
+    order(iso3_r250_id)
+  ],
   file.path(final_dir, "ground_water_gep.csv"),
   row.names = FALSE
 )
