@@ -3,7 +3,7 @@
 This repository contains the code used to calculate the Global Ecosystem Product (GEP) of Groundwater Recharge Service. The majority of the code is written in R, with a small portion in Python for automating model execution.
 
 ## Path Configuration
-`0_path_config.R` sets up the directory paths to the data folders used in this analysis. The variable `p_dir` in this script must be updated to point to the base (project) directory where the `Data` folder and `Scr` folder are located on your local machine. All the raw input data (available from the shared Google Drive folder) should be placed in the `Data/Raw` directory. This script also creates required intermediate and final output directories if they do not already exist.
+`0_path_config.R` sets up the directory paths to the data folders used in this analysis. The variable `p_dir` in this script must be updated to point to the base (project) directory where the `Data` folder and `Src` folder are located on your local machine. All the raw input data (available from the shared Google Drive folder) should be placed in the `Data/Raw` directory. This script also creates required intermediate and final output directories if they do not already exist.
 
 ## Data Preparation for InVEST Seasonal Water Yield Model
 `x_PrepData` directory contains R scripts to preprocess raw input data for the InVEST Seasonal Water Yield (SWY) model. These data preparation steps include 
