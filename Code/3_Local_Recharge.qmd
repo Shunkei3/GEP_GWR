@@ -14,7 +14,7 @@ title: "Generate Local Recharge Layer (L.tif) from InVEST SWY Outputs"
 # Setup
 ```{r}
 library(here)
-i_am("Scr/Code/3_local_recharge.qmd")
+i_am("Src/Code/3_local_recharge.qmd")
 
 # /*===== Load R packages =====*/
 library(data.table)
@@ -28,7 +28,7 @@ library(ggplot2)
 library(tidyterra)
 
 # /*===== Base path configurations =====*/
-source(here("Scr/Code/0_path_config.R"))
+source(here("Src/Code/0_path_config.R"))
 
 # /*---- Path to the SWY output directory ----*/
 final_swy_dir <- file.path(final_dir, "SWY")

@@ -10,7 +10,7 @@ title: "County-Level Aggregation of Local Recharge Layers"
 
 ```{r}
 library(here)
-i_am("Scr/Code/4_Country_L_values.qmd")
+i_am("Src/Code/4_Country_L_values.qmd")
 
 # /*===== Load R packages =====*/
 library(data.table)
@@ -25,7 +25,7 @@ library(sf)
 
 
 # /*===== Path configurations =====*/
-source(here("Scr/Code/0_path_config.R"))
+source(here("Src/Code/0_path_config.R"))
 ```
 
 # Data Prerequisites

@@ -9,7 +9,7 @@
 
 
 # Parent Directory (Change this part)
-p_dir <- "/Volumes/baseHD/NatCapTEEMs/GEP/GWR"
+p_dir <- "/Volumes/baseHD/NatCapTEEMs/GEP/GWR_main"
 
 # Data Directory
 base_dir <- file.path(p_dir, "Data")

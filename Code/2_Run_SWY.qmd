@@ -5,7 +5,7 @@ title: "Run InVEST SWY Model"
 # Setups
 ```{r}
 library(here)
-i_am("Scr/Code/2_Run_SWY.qmd")
+i_am("Src/Code/2_Run_SWY.qmd")
 
 # /*===== Load R packages =====*/
 library(data.table)
@@ -14,7 +14,7 @@ library(terra)
 library(sf)
 
 # /*===== Base path configurations =====*/
-source(here("Scr/Code/0_path_config.R"))
+source(here("Src/Code/0_path_config.R"))
 
 # /*---- Path to the output directory ----*/
 final_swy_dir <- 
@@ -28,7 +28,7 @@ final_swy_dir <-
 library(reticulate)
 # Inspect what R is using:
 # py_config()
-source_python(here("Scr/Code/x_SWY_Runner.py"))
+source_python(here("Src/Code/x_SWY_Runner.py"))
 ```
 
 # Prerequisites

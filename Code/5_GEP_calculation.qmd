@@ -17,7 +17,7 @@ Title: "County-Level Value Calculation of Local Recharge"
 # Setup
 ```{r}
 library(here)
-i_am("Scr/Code/5_GEP_calculation.qmd")
+i_am("Src/Code/5_GEP_calculation.qmd")
 
 # /*===== Load R packages =====*/
 library(data.table)
@@ -29,7 +29,7 @@ library(sf)
 library(countrycode)
 
 # /*===== Path configurations =====*/
-source(here("Scr/Code/0_path_config.R"))
+source(here("Src/Code/0_path_config.R"))
 ```
 
 
@@ -69,22 +69,20 @@ l_val_dt <-
 # /*===== Groundwater Use Data (10^9 m3/year) =====*/
 gw_use_dt <- 
   fread(file.path(raw_dir, "GroundwaterUseData/AQUASTAT Dissemination System.csv")) %>%
-  .[Year == 2020, .(country = Area, gw_wdw_bil = Value)] %>%
+  .[Year == 2019, .(country = Area, gw_wdw_bil = Value)] %>%
   .[, iso3_r250_label := countrycode(country, "country.name", "iso3c")] %>%
   .[, gw_wdw := gw_wdw_bil * 1e9]
 
 # /*===== Electricity Prices =====*/
 elec_price_dt <-
   rio::import(
-    file.path(raw_dir, "EnergyPrices/global-electricity-per-kwh-pricing-2021.xlsx"),
+    file.path(raw_dir, "EnergyPrices/WB_electricity_price_data.xlsx"),
     setclass = "data.table"
   ) %>%
-  .[,.(
-    country_code = `Country code`, 
-    p_kwh = `Average price of 1KW/h (USD)`
-  )] %>%
-  .[, iso3_r250_label := countrycode(country_code, "iso2c", "iso3c")]
-
+  .[Year == 2019, .(
+    iso3_r250_label = `Economy ISO3`,
+    p_kwh = Price / 100
+  )]
 
 # /*===== Merge datasets =====*/
 note_map <- c(
@@ -145,6 +143,7 @@ gwr_val_dt %>%
 
 hist(gwr_val_dt$gep, breaks = 50)
 summary(gwr_val_dt$gep)
+sum(gwr_val_dt$gep, na.rm = TRUE)
 
 # sum(gwr_val_dt$gep, na.rm = TRUE)
 # sum(gwr_val_dt$gep, na.rm = TRUE) / 1e3
@@ -153,9 +152,17 @@ summary(gwr_val_dt$gep)
 
 # 7211276 USD = 7.21 million USD
 
-# Save as a csv (final output)
+# Save as a csv (final output), including reasons for missing GEP values.
+# The note is blank when all required inputs are available and lists every
+# missing input otherwise (for example, "no electricity price data available").
 write.csv(
-  gwr_val_dt[, .(iso3_r250_id, iso3_r250_label, iso3_r250_name, ground_water_gep = gep)],
+  gwr_val_dt[, .(
+    iso3_r250_id,
+    iso3_r250_label,
+    iso3_r250_name,
+    ground_water_gep = gep,
+    note
+  )],
   file.path(final_dir, "ground_water_gep.csv"),
   row.names = FALSE
 )
@@ -173,10 +180,6 @@ ggplot() +
   geom_sf(
     data = gwr_val_dt_sf, 
     aes(fill = gep), color = "black"
-  ) +
-  scale_fill_viridis_c(
-    na.value = "lightgrey",
-    labels = scales::label_number(scale_cut = scales::cut_short_scale())
   ) +
   theme_bw()
 

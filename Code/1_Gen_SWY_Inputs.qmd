@@ -12,16 +12,16 @@ TypeError: boolean value of NA is ambiguous
 # Setup
 ```{r}
 library(here)
-i_am("Scr/Code/1_Gen_SWY_Inputs.qmd")
+i_am("Src/Code/1_Gen_SWY_Inputs.qmd")
 
 # /*===== Load Functions =====*/
 # Always load the updated version of the code
-path_source_Rfunc <- here("Scr/Code/x_SWY_Functions.R")
+path_source_Rfunc <- here("Src/Code/x_SWY_Functions.R")
 if(file.exists(path_source_Rfunc)){
   file.remove(path_source_Rfunc)
 }
 # Create R script from qmd
-quarto::qmd_to_r_script(qmd = here("Scr/Code/x_SWY_Functions.qmd"))
+quarto::qmd_to_r_script(qmd = here("Src/Code/x_SWY_Functions.qmd"))
 # Load functions
 source(path_source_Rfunc)
 ```
